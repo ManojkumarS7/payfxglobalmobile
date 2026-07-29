@@ -1,0 +1,357 @@
+write_file(
+    absolutePath="/Users/apple/studioprojects/payfxglobal/lib/features/dashboard/view/dashboard_view.dart",
+    text="""import 'package:flutter/material.dart';
+import 'package:payfxglobal/features/auth/view/login_screen.dart';
+import 'package:payfxglobal/services/api_service.dart';
+import 'package:payfxglobal/services/app_services.dart';
+import 'package:payfxglobal/utils/app_theme.dart';
+import 'package:payfxglobal/widgets/no_internet_banner.dart';
+import 'package:payfxglobal/widgets/custom_loading_indicator.dart';
+import 'package:payfxglobal/utils/session_manager.dart';
+import 'package:payfxglobal/services/network_service.dart';
+
+import '../service/dashboard_api_service.dart';
+import '../viewmodel/dashbaord_view_model.dart';
+
+class DashboardScreen extends StatefulWidget {
+  final Map<String, dynamic> userData;
+
+  const DashboardScreen({super.key, required this.userData});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  late DashboardViewModel vm;
+
+  static const Color _navy = Color(0xFF16305C);
+  static const Color _amberStart = Color(0xFFFFC24B);
+  static const Color _amberEnd = Color(0xFFF7A80B);
+
+  int _selectedNavIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    ApiService.initializeApiKey();
+    SessionManager.updateLastActive();
+
+    vm = DashboardViewModel(service: DashboardService());
+    vm.initialize(widget.userData);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      LoginScreen.askBiometricPermission(context);
+    });
+  }
+
+  String _greeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final primaryColor = AppTheme.PrimaryColor;
+
+    return AnimatedBuilder(
+      animation: vm,
+      builder: (context, _) {
+        if (vm.isLoading) {
+          return const LoadingOverlay();
+        }
+
+        return Scaffold(
+          key: const ValueKey('dashboard_scaffold'),
+          backgroundColor: AppTheme.backgroundColor,
+          body: SafeArea(
+            child: Column(
+              children: [
+                const _InternetBannerListener(),
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: () => vm.refresh(widget.userData),
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildTopBar(primaryColor),
+                          const SizedBox(height: 20),
+                          _buildGreetingHeader(primaryColor),
+                          const SizedBox(height: 20),
+                          _buildQuickTransferBanner(),
+                          const SizedBox(height: 20),
+                          _buildQuickActionsRow(),
+                          const SizedBox(height: 28),
+                          _buildServicesHeader(),
+                          const SizedBox(height: 12),
+                          _buildServicesList(),
+                          const SizedBox(height: 16),
+                          _buildEducationLoanPromo(),
+                          const SizedBox(height: 16),
+                          _buildGicAndBlockedAccountRow(),
+                          if (!vm.hasSenderDetails || !vm.hasKycDocuments)
+                            KeyedSubtree(
+                              key: const ValueKey('kyc_action_section'),
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 16),
+                                child: _buildActionRequiredSection(primaryColor),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          bottomNavigationBar: _buildBottomNavBar(),
+        );
+      },
+    );
+  }
+
+  Widget _buildTopBar(Color primaryColor) {
+    return Row(
+      key: const ValueKey('top_bar'),
+      children: [
+        Image.asset(
+          'assets/images/logo.png',
+          width: 120, height: 36, fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => const Text('PayFX', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: _navy)),
+        ),
+        const Spacer(),
+        IconButton(
+          onPressed: () => Navigator.pushNamed(context, '/notifications'),
+          icon: const Icon(Icons.notifications_none_rounded, color: _navy, size: 26),
+        ),
+        const SizedBox(width: 4),
+        GestureDetector(
+          onTap: () => Navigator.pushNamed(context, '/profile', arguments: vm.currentUser),
+          child: CircleAvatar(
+            radius: 20, backgroundColor: _navy,
+            child: Text(vm.initialsFromName(vm.currentUser.fullName), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGreetingHeader(Color primaryColor) {
+    return Stack(
+      key: const ValueKey('greeting'),
+      children: [
+        Positioned(
+          right: -10, top: 0,
+          child: Image.asset('assets/images/global.png', width: 150, height: 150, errorBuilder: (_, __, ___) => Icon(Icons.public, size: 110, color: primaryColor.withOpacity(0.2))),
+        ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('${_greeting()} 👋', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey.shade700)),
+            const SizedBox(height: 6),
+            Text(vm.currentUser.fullName, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: _navy)),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(color: primaryColor.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.verified, size: 16, color: primaryColor), const SizedBox(width: 6), Text('Verified Customer', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: primaryColor))]),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuickTransferBanner() {
+    return GestureDetector(
+      key: const ValueKey('qt_banner'),
+      onTap: _handleMoneyTransferPressed,
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(gradient: const LinearGradient(colors: [_amberStart, _amberEnd]), borderRadius: BorderRadius.circular(20)),
+        child: Row(
+          children: [
+            CircleAvatar(radius: 22, backgroundColor: _navy, child: Text(vm.initialsFromName(vm.currentUser.fullName), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700))),
+            const SizedBox(width: 14),
+            const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Quick Transfer', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: _navy)), Text('Send money to loved ones instantly', style: TextStyle(fontSize: 13, color: _navy))])),
+            const CircleAvatar(radius: 20, backgroundColor: _navy, child: Icon(Icons.arrow_forward, color: Colors.white, size: 20)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActionsRow() {
+    return Row(
+      key: const ValueKey('quick_actions'),
+      children: [
+        _quickActionIcon(label: 'Transfer', icon: Icons.send_rounded, background: const Color(0xFFFFEED9), iconColor: const Color(0xFFF7A80B), onTap: _handleMoneyTransferPressed),
+        _quickActionIcon(label: 'History', icon: Icons.history_rounded, background: const Color(0xFFEFEBFF), iconColor: const Color(0xFF6C5CE7), onTap: () => Navigator.pushNamed(context, '/transaction-history', arguments: {'user_id': vm.currentUser.userId})),
+        _quickActionIcon(label: 'Rates', icon: Icons.show_chart_rounded, background: const Color(0xFFDFF6E8), iconColor: const Color(0xFF16A34A), onTap: () => Navigator.pushNamed(context, '/exchange-rates')),
+        _quickActionIcon(label: 'Support', icon: Icons.headset_mic_rounded, background: const Color(0xFFDCEBFF), iconColor: const Color(0xFF2563EB), onTap: () => Navigator.pushNamed(context, '/help-support')),
+      ],
+    );
+  }
+
+  Widget _quickActionIcon({required String label, required IconData icon, required Color background, required Color iconColor, VoidCallback? onTap}) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Column(children: [
+          Container(width: 56, height: 56, decoration: BoxDecoration(color: background, shape: BoxShape.circle), child: Icon(icon, color: iconColor, size: 26)),
+          const SizedBox(height: 8),
+          Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _navy)),
+        ]),
+      ),
+    );
+  }
+
+  Widget _buildServicesHeader() {
+    return const Text('Services', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: _navy));
+  }
+
+  Widget _buildServicesList() {
+    return Column(
+      key: const ValueKey('services_list'),
+      children: [
+        _serviceListTile(icon: Icons.send_rounded, title: 'Money Transfer', subtitle: 'Fast transfers to 200+ countries', onTap: _handleMoneyTransferPressed),
+        const SizedBox(height: 12),
+        _serviceListTile(icon: Icons.school_rounded, title: 'Education Loan', subtitle: 'Low interest loans for students', onTap: () => Navigator.pushNamed(context, '/education-loan')),
+      ],
+    );
+  }
+
+  Widget _serviceListTile({required IconData icon, required String title, required String subtitle, VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey.shade200)),
+        child: Row(children: [
+          Container(width: 48, height: 48, decoration: BoxDecoration(color: _navy.withOpacity(0.05), borderRadius: BorderRadius.circular(14)), child: Icon(icon, color: _navy, size: 24)),
+          const SizedBox(width: 14),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: _navy)), Text(subtitle, style: TextStyle(fontSize: 12, color: Colors.grey.shade600))])),
+          const Icon(Icons.chevron_right, color: Colors.grey),
+        ]),
+      ),
+    );
+  }
+
+  Widget _buildEducationLoanPromo() {
+    return Container(
+      key: const ValueKey('edu_promo'),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(color: const Color(0xFFEFF5FF), borderRadius: BorderRadius.circular(20)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Education Loan', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: _navy)),
+          const SizedBox(height: 8),
+          Text('Study abroad with financial support.', style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () => Navigator.pushNamed(context, '/education-loan'),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB), foregroundColor: Colors.white, shape: StadiumBorder()),
+            child: const Text('Check Eligibility'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGicAndBlockedAccountRow() {
+    return Row(
+      key: const ValueKey('gic_row'),
+      children: [
+        Expanded(child: _infoCard(title: 'GIC', color: const Color(0xFF16A34A), icon: Icons.shield, onTap: () => Navigator.pushNamed(context, '/gic'))),
+        const SizedBox(width: 12),
+        Expanded(child: _infoCard(title: 'Blocked A/C', color: const Color(0xFF6C3CE9), icon: Icons.lock, onTap: () => Navigator.pushNamed(context, '/blocked-account'))),
+      ],
+    );
+  }
+
+  Widget _infoCard({required String title, required Color color, required IconData icon, VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(18)),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 12),
+          Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: _navy)),
+          const SizedBox(height: 8),
+          Text('Explore options', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+        ]),
+      ),
+    );
+  }
+
+  Widget _buildActionRequiredSection(Color primaryColor) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Action Required', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: _navy)),
+        const SizedBox(height: 12),
+        if (!vm.hasSenderDetails) _serviceListTile(icon: Icons.person_add, title: 'Update Sender Details', subtitle: 'Complete your profile', onTap: () => Navigator.pushNamed(context, '/update-sender-details')),
+        if (!vm.hasKycDocuments) Padding(padding: const EdgeInsets.only(top: 12), child: _serviceListTile(icon: Icons.file_upload, title: 'Upload KYC', subtitle: 'Submit documents', onTap: () => Navigator.pushNamed(context, '/update-upload-documents', arguments: {'user_id': vm.currentUser.userId}))),
+      ],
+    );
+  }
+
+  Widget _buildBottomNavBar() {
+    return BottomNavigationBar(
+      currentIndex: _selectedNavIndex,
+      type: BottomNavigationBarType.fixed,
+      selectedItemColor: AppTheme.PrimaryColor,
+      onTap: (i) {
+        setState(() => _selectedNavIndex = i);
+        if (i == 1) _handleMoneyTransferPressed();
+        if (i == 2) Navigator.pushNamed(context, '/transaction-history', arguments: {'user_id': vm.currentUser.userId});
+        if (i == 3) Navigator.pushNamed(context, '/profile', arguments: vm.currentUser);
+      },
+      items: const [
+        BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
+        BottomNavigationBarItem(icon: Icon(Icons.send_rounded), label: 'Transfer'),
+        BottomNavigationBarItem(icon: Icon(Icons.description_outlined), label: 'History'),
+        BottomNavigationBarItem(icon: Icon(Icons.person_outline_rounded), label: 'Profile'),
+      ],
+    );
+  }
+
+  void _handleMoneyTransferPressed() {
+    final missing = vm.getMissingItems();
+    if (missing.isNotEmpty) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Incomplete Info'),
+          content: Text('Please complete: ${missing.join(", ")}'),
+          actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK'))],
+        ),
+      );
+      return;
+    }
+    Navigator.pushNamed(context, '/money-transfer', arguments: {'userData': widget.userData, 'transferType': 'Bank Transfer'});
+  }
+}
+
+class _InternetBannerListener extends StatelessWidget {
+  const _InternetBannerListener();
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<bool>(
+      stream: networkService.internetStatus,
+      initialData: true,
+      builder: (context, snapshot) => InternetBanner(isConnected: snapshot.data ?? true),
+    );
+  }
+}
+"""
+)

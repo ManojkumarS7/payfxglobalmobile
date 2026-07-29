@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "372707738831",
+    "project_id": "payfx-global",
+    "storage_bucket": "payfx-global.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:372707738831:android:cedee25b785629627323ba",
+        "android_client_info": {
+          "package_name": "com.payfx.payfxglobal"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBGMyi6fujHV45DNZ8UcaPvmcjQuxXfIuo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
