@@ -33,6 +33,11 @@ class MoneyTransferViewModel extends ChangeNotifier {
   List<Currency> currencies = [];
   Currency? selectedCurrency;
 
+  // IBR Rate limits
+  double? ibrTotalInrLimit;
+  double? ibrUsdAmountLimit;
+  String? amountErrorMessage;
+
   Future<void> initialize(Map<String, dynamic> userData) async {
     senderController.text = formatter.format(senderAmount);
     isSendAmountValid = senderAmount >= 5000;
@@ -72,6 +77,7 @@ class MoneyTransferViewModel extends ChangeNotifier {
         );
 
         await fetchCurrencyData();
+        await _fetchAndSetIbrLimits();
 
         if (currentUser.userId > 0) {
           hasSenderDetails =
@@ -86,6 +92,14 @@ class MoneyTransferViewModel extends ChangeNotifier {
     } finally {
       isPageLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> _fetchAndSetIbrLimits() async {
+    final ibrData = await service.fetchIbrRate();
+    if (ibrData.isNotEmpty) {
+      ibrTotalInrLimit = double.tryParse(ibrData['total_inr']?.toString() ?? '');
+      ibrUsdAmountLimit = double.tryParse(ibrData['usd_amount']?.toString() ?? '');
     }
   }
 
@@ -158,6 +172,29 @@ class MoneyTransferViewModel extends ChangeNotifier {
     calculateReverse();
   }
 
+  bool _validateLimits() {
+    amountErrorMessage = null;
+
+    if (selectedCurrency?.code == 'USD') {
+      // For USD, only check the USD amount limit. Ignore INR limit.
+      if (ibrUsdAmountLimit != null && recipientAmount > ibrUsdAmountLimit!) {
+        amountErrorMessage = 'Maximum Amount\nMaximum allowable limit capped at USD ${ibrUsdAmountLimit!.toStringAsFixed(2)}.';
+        isSendAmountValid = false;
+        return false;
+      }
+    } else {
+      // For other currencies, check the INR total limit.
+      if (ibrTotalInrLimit != null && senderAmount > ibrTotalInrLimit!) {
+        amountErrorMessage = 'Maximum Amount\nMaximum allowable limit capped at INR ${ibrTotalInrLimit!.toStringAsFixed(2)}.';
+        isSendAmountValid = false;
+        return false;
+      }
+    }
+
+    isSendAmountValid = senderAmount >= 5000;
+    return true;
+  }
+
   void calculateForward() {
     final send = senderAmount;
 
@@ -167,6 +204,7 @@ class MoneyTransferViewModel extends ChangeNotifier {
       gstAmount = 0;
       tcsAmount = 0;
       isSendAmountValid = false;
+      amountErrorMessage = null;
       notifyListeners();
       return;
     }
@@ -190,7 +228,8 @@ class MoneyTransferViewModel extends ChangeNotifier {
     gstAmount = gst;
     tcsAmount = tcs;
     recipientController.text = recipientAmount.toStringAsFixed(2);
-    isSendAmountValid = senderAmount >= 5000;
+    
+    _validateLimits();
 
     notifyListeners();
   }
@@ -204,6 +243,7 @@ class MoneyTransferViewModel extends ChangeNotifier {
       gstAmount = 0;
       tcsAmount = 0;
       isSendAmountValid = false;
+      amountErrorMessage = null;
       notifyListeners();
       return;
     }
@@ -224,7 +264,8 @@ class MoneyTransferViewModel extends ChangeNotifier {
     gstAmount = gst;
     tcsAmount = tcs;
     senderController.text = senderAmount.toStringAsFixed(2);
-    isSendAmountValid = senderAmount >= 5000;
+    
+    _validateLimits();
 
     notifyListeners();
   }
@@ -248,6 +289,10 @@ class MoneyTransferViewModel extends ChangeNotifier {
   }
 
   Future<Map<String, dynamic>> continueTransfer() async {
+    if (!_validateLimits()) {
+       throw Exception(amountErrorMessage ?? 'Limit exceeded');
+    }
+
     isLoading = true;
     notifyListeners();
 

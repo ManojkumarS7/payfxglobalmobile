@@ -124,6 +124,31 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
   // FILE PICKER
   // =====================================================
 
+  String? validateFile(File file) {
+    final extension =
+    file.path.split('.').last.toLowerCase();
+
+    final sizeInMB =
+        file.lengthSync() / (1024 * 1024);
+
+    if (!['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx']
+        .contains(extension)) {
+      return 'Unsupported file format. Allowed: JPG, PNG, PDF, DOC, DOCX';
+    }
+
+    if (['jpg', 'jpeg', 'png'].contains(extension) &&
+        sizeInMB > 5) {
+      return 'Image size should not exceed 5 MB';
+    }
+
+    if (['pdf', 'doc', 'docx'].contains(extension) &&
+        sizeInMB > 10) {
+      return 'Document size should not exceed 10 MB';
+    }
+
+    return null;
+  }
+
   Future<void> _pickImageOrFile(Function(File) onPicked) async {
     showModalBottomSheet(
       context: context,
@@ -146,9 +171,21 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
                      return;
                    }
                 }
+                final picked =
+                await ImagePicker().pickImage(source: ImageSource.camera);
 
-                final picked = await ImagePicker().pickImage(source: ImageSource.camera);
-                if (picked != null) onPicked(File(picked.path));
+                if (picked != null) {
+                  final file = File(picked.path);
+
+                  final error = validateFile(file);
+
+                  if (error != null) {
+                    AppSnackbar.show(context, error, success: false);
+                    return;
+                  }
+
+                  onPicked(file);
+                }
               },
             ),
             ListTile(
@@ -156,8 +193,21 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
               title: const Text('Gallery'),
               onTap: () async {
                 Navigator.pop(context);
-                final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
-                if (picked != null) onPicked(File(picked.path));
+                final picked =
+                await ImagePicker().pickImage(source: ImageSource.gallery);
+
+                if (picked != null) {
+                  final file = File(picked.path);
+
+                  final error = validateFile(file);
+
+                  if (error != null) {
+                    AppSnackbar.show(context, error, success: false);
+                    return;
+                  }
+
+                  onPicked(file);
+                }
               },
             ),
             ListTile(
@@ -169,6 +219,19 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
                   type: FileType.custom,
                   allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
                 );
+
+                if (result != null && result.files.single.path != null) {
+                  final file = File(result.files.single.path!);
+
+                  final error = validateFile(file);
+
+                  if (error != null) {
+                    AppSnackbar.show(context, error, success: false);
+                    return;
+                  }
+
+                  onPicked(file);
+                }
                 if (result != null && result.files.single.path != null) {
                   onPicked(File(result.files.single.path!));
                 }
@@ -275,9 +338,20 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
                   const SizedBox(height: 40),
                   const Text('Identity Documents', style: TextStyle(fontFamily: 'Satoshi', fontSize: 18, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 20),
-                  _buildFileUploadTile(label: 'E-Aadhaar *', file: vm.aadhaarFrontFile, onTap: () => _pickImageOrFile(vm.setAadhaarFront)),
+                  _buildFileUploadTile(
+                    label: 'E-Aadhaar *\n(PDF • Max 10 MB)',
+                    file: vm.aadhaarFrontFile,
+                    onTap: () => _pickImageOrFile(vm.setAadhaarFront),
+                  ),
+
                   const SizedBox(height: 16),
-                  _buildFileUploadTile(label: 'PAN Card (Front Side) *', file: vm.panFrontFile, onTap: () => _pickImageOrFile(vm.setPanFront)),
+
+                  _buildFileUploadTile(
+                    label: 'PAN Card (Front Side) *\n(JPG, PNG, PDF • Max 10 MB)',
+                    file: vm.panFrontFile,
+                    onTap: () => _pickImageOrFile(vm.setPanFront),
+                  ),
+
                   const SizedBox(height: 32),
 
                   Row(

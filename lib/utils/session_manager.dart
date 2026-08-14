@@ -12,13 +12,14 @@ class SessionManager extends WidgetsBindingObserver {
   factory SessionManager() => _instance;
   SessionManager._internal();
   static const int lockTimeoutSeconds = 60; // 1 minute
-  static const int backgroundTimeoutMinutes = 30240; // 3 weeks
+  static const Duration sessionExpiry = Duration(days: 21);
   static const String _bgTimeKey = 'last_background_time';
   static const String _lastActiveKey = 'last_active_time';
   static const String _biometricEnabledKey = 'biometric_lock_enabled';
   bool _isLoggingOut = false;
   bool _isInitialized = false;
   bool _isLockShowing = false;
+  bool _resumeCheckRunning = false;
 
   DateTime? _lastUnlockTime;
   void initialize() {
@@ -33,22 +34,54 @@ class SessionManager extends WidgetsBindingObserver {
     _isInitialized = false;
   }
   @override
+
   void didChangeAppLifecycleState(AppLifecycleState state) {
+
     debugPrint('📱 App Lifecycle: $state');
+
     // Only save background time when the app goes into the background (paused)
-    if (state == AppLifecycleState.paused) {
+    // if (state == AppLifecycleState.paused) {
+    //   _saveBackgroundTime();
+    // }
+
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
       _saveBackgroundTime();
     }
+
+    // if (state == AppLifecycleState.resumed) {
+    //   Future.delayed(const Duration(milliseconds: 500), () {
+    //     if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
+    //       checkSession(isColdStart: false);
+    //     } else {
+    //       debugPrint('⏳ Skipped session check: app went back to background');
+    //     }
+    //   });
+    // }
+
     if (state == AppLifecycleState.resumed) {
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
-          checkSession(isColdStart: false);
-        } else {
-          debugPrint('⏳ Skipped session check: app went back to background');
+      Future.delayed(const Duration(milliseconds: 500), () async {
+        if (WidgetsBinding.instance.lifecycleState !=
+            AppLifecycleState.resumed) {
+          return;
+        }
+
+        if (_resumeCheckRunning) {
+          debugPrint('⏳ Resume check already running');
+          return;
+        }
+
+        _resumeCheckRunning = true;
+
+        try {
+          await checkSession(isColdStart: false);
+        } finally {
+          _resumeCheckRunning = false;
         }
       });
     }
   }
+
   /// Reset all session timers. Call this after login or biometric success.
   static Future<void> updateLastActive() async {
     final prefs = await SharedPreferences.getInstance();
@@ -59,6 +92,7 @@ class SessionManager extends WidgetsBindingObserver {
     _instance._lastUnlockTime = DateTime.now();
     debugPrint('⏱️ Session timers reset (User active)');
   }
+
   Future<void> _saveBackgroundTime() async {
     if (_isLockShowing) return;
     final prefs = await SharedPreferences.getInstance();
@@ -80,7 +114,7 @@ class SessionManager extends WidgetsBindingObserver {
       final elapsed = now.difference(
         DateTime.fromMillisecondsSinceEpoch(lastActive),
       );
-      if (elapsed.inMinutes >= backgroundTimeoutMinutes) {
+      if  (elapsed >= sessionExpiry){
         await forceLogout(reason: 'Session expired. Please login again.');
         return SessionState.expired;
       }
@@ -120,6 +154,7 @@ class SessionManager extends WidgetsBindingObserver {
     }
     return false;
   }
+
   void showLockScreen({bool isResuming = true}) {
     if (_isLockShowing) return;
 
@@ -137,6 +172,7 @@ class SessionManager extends WidgetsBindingObserver {
       });
     }
   }
+
   Future<void> forceLogout({String? reason}) async {
     if (_isLoggingOut) return;
     _isLoggingOut = true;
@@ -159,4 +195,5 @@ class SessionManager extends WidgetsBindingObserver {
       _isLockShowing = false;
     }
   }
+
 }

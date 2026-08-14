@@ -74,6 +74,24 @@ class MoneyTransferService {
     return 0.012;
   }
 
+  Future<Map<String, dynamic>> fetchIbrRate() async {
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConstants.baseUrl}/app/customer/today-ibr-rate'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['status'] == true && data['data'] != null) {
+          return data['data'];
+        }
+      }
+    } catch (e) {
+      print('Error fetching IBR rate: $e');
+    }
+    return {};
+  }
+
   Future<Map<String, dynamic>> storeTransaction({
     required User user,
     required String sendAmount,

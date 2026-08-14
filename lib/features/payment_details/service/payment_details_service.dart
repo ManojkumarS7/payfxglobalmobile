@@ -54,6 +54,7 @@ class PaymentDetailsService {
     required String bsbCode,
     required String iban,
     required String ukSortCode,
+    required String accountHolder,
     required Map<String, PlatformFile?> files,
   }) {
     return ApiService.createTransaction(
@@ -80,6 +81,7 @@ class PaymentDetailsService {
       transitNumber: transitNumber,
       bsbCode: bsbCode,
       iban: iban,
+      accountHolder: accountHolder,
       ukSortCode: ukSortCode,
       files: files,
     );

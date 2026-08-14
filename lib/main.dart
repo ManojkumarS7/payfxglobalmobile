@@ -41,32 +41,37 @@ import 'features/payment_tcs/view/payment_tcs_page.dart';
 import 'features/auth/view/sender_detail_screen.dart';
 
 
-// Key for accessing navigator globally (referenced in SessionManager)
+
+
+
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 
 Future<void> main() async {
+
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
+
   await ApiService.initializeApiKey();
+  SessionManager().initialize();
+  await NotificationService.initialize();
+
 
   runApp(
     const ProviderScope(
-      child: PayUniApp(),
+      child: PayFXGlobal(),
     ),
   );
-
-  SessionManager().initialize();
-  NotificationService.initialize();
 }
 
 
-class PayUniApp extends StatelessWidget {
-  const PayUniApp({super.key});
+
+class PayFXGlobal extends StatelessWidget {
+  const PayFXGlobal({super.key});
 
   @override
   Widget build(BuildContext context) {

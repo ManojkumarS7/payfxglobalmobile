@@ -1,5 +1,6 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import '../../../utils/user_storage.dart';
 import '../model/reason_config/reason_cofig.dart';
 import '../service/payment_details_service.dart';
 
@@ -12,10 +13,14 @@ class PaymentDetailsViewModel extends ChangeNotifier {
 
   String? selectedRelationship;
   String? educationLoan;
+  String? isBeneficiaryAccountHolder; // New mandatory field
 
   int? userId;
   int? transactionId;
   double sendAmount = 0.0;
+
+  String? storedUserName;
+  String? storedUserDob;
 
   List<Map<String, dynamic>> countries = [];
   List<Map<String, dynamic>> universities = [];
@@ -56,13 +61,73 @@ class PaymentDetailsViewModel extends ChangeNotifier {
     return reasonConfigs[selectedReasonId];
   }
 
-  bool get isSelfRemittanceDisallowed {
+  String? get selfRemittanceErrorMessage {
+    // 0. Check the mandatory beneficiary ownership question
+    if (isBeneficiaryAccountHolder == 'Yes') {
+      return 'Regulatory Restriction: You cannot be the account holder, joint account holder, authorized signatory, or beneficial owner of the beneficiary account for this transaction.';
+    }
+
     final cfg = currentConfig;
-    if (cfg == null) return false;
+    if (cfg == null) return null;
+
     final name = cfg.reasonName.toLowerCase();
-    final isSelf = selectedRelationship?.toLowerCase() == 'self';
-    return (name.contains('gift') || name.contains('family maintenance')) && isSelf;
+    
+    // Check if it's Gift or Family Maintenance as per request
+    final isGiftOrFM = name.contains('gift') || name.contains('family maintenance');
+    if (!isGiftOrFM) return null;
+
+    // 1. If relationship is "Self" for Gift or FM
+    if (selectedRelationship?.toLowerCase() == 'self') {
+      return 'Self-remittance is not allowed for this transaction. Please select a different relationship.';
+    }
+
+    // 2. If user enters their own name and DOB
+    // Normalize spaces: replace multiple spaces with single space
+    final enteredName = nameController.text.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+    final enteredDob = dobController.text.trim();
+
+    if (enteredName.isNotEmpty && enteredDob.isNotEmpty) {
+      debugPrint('--- Self Remittance Check ---');
+      debugPrint('Entered Name (Normalized): $enteredName');
+      
+      final normalizedStoredName = storedUserName?.toLowerCase().trim().replaceAll(RegExp(r'\s+'), ' ');
+      debugPrint('Stored Name (Normalized): $normalizedStoredName');
+      debugPrint('Entered DOB: $enteredDob');
+      debugPrint('Stored DOB: $storedUserDob');
+
+      final matchesStoredName = normalizedStoredName != null && enteredName == normalizedStoredName;
+      
+      bool matchesStoredDob = false;
+      if (storedUserDob != null) {
+        final s1 = enteredDob.replaceAll(RegExp(r'\D'), '');
+        final s2 = storedUserDob!.replaceAll(RegExp(r'\D'), '');
+        
+        debugPrint('Normalized Entered DOB: $s1');
+        debugPrint('Normalized Stored DOB: $s2');
+
+        if (s1 == s2) {
+          matchesStoredDob = true;
+        } else if (s1.length == 8 && s2.length == 8) {
+          final s1Swapped = s1.substring(4) + s1.substring(2, 4) + s1.substring(0, 2);
+          debugPrint('Swapped Entered DOB (for DDMMYYYY/YYYYMMDD check): $s1Swapped');
+          if (s1Swapped == s2) matchesStoredDob = true;
+        }
+      }
+
+      debugPrint('Matches Name: $matchesStoredName');
+      debugPrint('Matches DOB: $matchesStoredDob');
+      debugPrint('-----------------------------');
+
+      // Stop if EITHER name OR DOB matches
+      if (matchesStoredName || matchesStoredDob) {
+        return 'It might be self-remittance. Enter different beneficiary data for transaction.';
+      }
+    }
+
+    return null;
   }
+
+  bool get isSelfRemittanceDisallowed => selfRemittanceErrorMessage != null;
 
   double get tcsRate {
     final cfg = currentConfig;
@@ -170,6 +235,10 @@ class PaymentDetailsViewModel extends ChangeNotifier {
   };
 
   Future<void> init() async {
+    storedUserName = await UserStorage.getUserFullName();
+    storedUserDob = await UserStorage.getUserDob();
+    debugPrint('✅ Initialized PaymentDetailsViewModel with Stored User: $storedUserName, DOB: $storedUserDob');
+    
     await Future.wait([
       fetchReasons(),
       fetchCountries(),
@@ -252,6 +321,7 @@ class PaymentDetailsViewModel extends ChangeNotifier {
     selectedRelationship = null;
     pickedFiles.clear();
     educationLoan = null;
+    isBeneficiaryAccountHolder = null;
     universities = [];
     selectedUniversityId = null;
     dobController.clear();
@@ -294,6 +364,11 @@ class PaymentDetailsViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void onBeneficiaryAccountHolderChanged(String? value) {
+    isBeneficiaryAccountHolder = value;
+    notifyListeners();
+  }
+
   void onBankNameChanged(String? value) {
     beneficiaryBankNameController.text = value ?? '';
     notifyListeners();
@@ -304,13 +379,41 @@ class PaymentDetailsViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> pickFile(String key) async {
-    final result = await FilePicker.platform.pickFiles(type: FileType.any);
+  Future<String?> pickFile(String key) async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx'],
+    );
 
-    if (result != null && result.files.isNotEmpty) {
-      pickedFiles[key] = result.files.first;
-      notifyListeners();
+    if (result == null) return null;
+
+    final pickedFile = result.files.first;
+
+    final extension =
+    (pickedFile.extension ?? '').toLowerCase();
+
+    final sizeInMB = pickedFile.size / (1024 * 1024);
+
+    if (!['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx']
+        .contains(extension)) {
+      return 'Unsupported file format.';
     }
+
+    if (['jpg', 'jpeg', 'png'].contains(extension) &&
+        sizeInMB > 10) {
+      return 'Image size should not exceed 5 MB';
+    }
+
+    if (['pdf', 'doc', 'docx'].contains(extension) &&
+        sizeInMB > 10) {
+      return 'Document size should not exceed 10 MB';
+    }
+
+    // Only save after validation passes
+    pickedFiles[key] = pickedFile;
+    notifyListeners();
+
+    return null;
   }
 
   Map<String, String> resolveCountryBankConfig(String countryNameLower) {
@@ -356,6 +459,9 @@ class PaymentDetailsViewModel extends ChangeNotifier {
     if (addressController.text.trim().isEmpty) return false;
     if (selectedCountryId == null) return false;
 
+    // The account holder question is mandatory
+    if (isBeneficiaryAccountHolder == null) return false;
+
     if (cfg.relationshipOptions.isNotEmpty && !cfg.relationshipFixed) {
       if (selectedRelationship == null ||
           selectedRelationship!.trim().isEmpty) {
@@ -385,21 +491,11 @@ class PaymentDetailsViewModel extends ChangeNotifier {
     return true;
   }
 
-  Future<Map<String, dynamic>> checkSelfRemittance() async {
-    if (userId == null || selectedReasonId == null) {
-      return {'success': true};
-    }
-
-    try {
-      final response = await service.checkSelfRemittance(
-        reasonId: selectedReasonId!,
-        name: nameController.text.trim(),
-        customerId: userId!,
-      );
-      return response;
-    } catch (e) {
-      return {'success': false, 'message': e.toString()};
-    }
+  // Local self-remittance check instead of API
+  bool checkLocalSelfRemittance() {
+    if (selectedReasonId == null) return false;
+    
+    return isSelfRemittanceDisallowed;
   }
 
   Future<Map<String, dynamic>> submitForm() async {
@@ -411,6 +507,15 @@ class PaymentDetailsViewModel extends ChangeNotifier {
       throw Exception('Reason missing');
     }
 
+    final enteredName = nameController.text.trim();
+    final enteredDob = dobController.text.trim();
+
+    debugPrint('🚀 Submitting Transaction:');
+    debugPrint('   Beneficiary Name (Entered): $enteredName');
+    debugPrint('   Beneficiary DOB (Entered): $enteredDob');
+    debugPrint('   Sender Name (Saved): $storedUserName');
+    debugPrint('   Sender DOB (Saved): $storedUserDob');
+
     isSubmitting = true;
     notifyListeners();
 
@@ -418,8 +523,8 @@ class PaymentDetailsViewModel extends ChangeNotifier {
       return await service.createTransaction(
         customerId: userId!,
         transactionId: transactionId ?? 0,
-        name: nameController.text.trim(),
-        dob: dobController.text.trim(),
+        name: enteredName,
+        dob: enteredDob,
         method: 'bank',
         reason: selectedReasonId!,
         relationship: selectedRelationship,
@@ -441,12 +546,15 @@ class PaymentDetailsViewModel extends ChangeNotifier {
         iban: ibanController.text.trim(),
         ukSortCode: sortCodeController.text.trim(),
         files: pickedFiles,
+        accountHolder: 'No', // As per requirement: proceed only if No, send 'No' to API
       );
     } finally {
       isSubmitting = false;
       notifyListeners();
     }
   }
+  
+  
 
   @override
   void dispose() {

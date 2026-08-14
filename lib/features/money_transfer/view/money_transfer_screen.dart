@@ -116,7 +116,7 @@ class _MoneyTransferScreenState extends State<MoneyTransferScreen> {
                           ? _shimmerBox(height: 52)
                           : AppPrimaryButton(
                         title: vm.isLoading ? 'Please wait...' : 'Send Money Securely',
-                        onPressed: vm.isLoading ? null : _handleSendPressed,
+                        onPressed: (vm.isLoading || !vm.isSendAmountValid) ? null : _handleSendPressed,
                       ),
                       const SizedBox(height: 14),
                       _buildSecureFooterText(),
@@ -270,6 +270,29 @@ class _MoneyTransferScreenState extends State<MoneyTransferScreen> {
                 ),
               ),
             ),
+            
+            if (vm.amountErrorMessage != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.shade200),
+                ),
+                child: Text(
+                  vm.amountErrorMessage!,
+                  style: const TextStyle(
+                    fontFamily: 'Satoshi',
+                    fontSize: 12,
+                    color: Colors.red,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+
             const SizedBox(height: 16),
             vm.isPageLoading ? _shimmerBox(height: 52) : _buildExchangeRateBanner(),
           ],
@@ -789,6 +812,7 @@ class _MoneyTransferScreenState extends State<MoneyTransferScreen> {
           },
         );
       } else {
+        print(decoded);
         AppSnackbar.show(
           context,
           decoded['message'] ?? 'Unable to start transaction',
@@ -796,9 +820,11 @@ class _MoneyTransferScreenState extends State<MoneyTransferScreen> {
         );
       }
     } catch (e) {
+      print(e);
       AppSnackbar.show(
+
         context,
-        'Something went wrong. Please try again',
+        e.toString().replaceAll('Exception: ', ''),
         success: false,
       );
     }

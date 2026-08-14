@@ -19,6 +19,7 @@ class _UnlockScreenState extends State<UnlockScreen> with WidgetsBindingObserver
   bool isLoading = false;
   bool? _isResuming;
   bool _wasPaused = false;
+  int _failedAttempts = 0;
   @override
   void initState() {
     super.initState();
@@ -75,8 +76,18 @@ class _UnlockScreenState extends State<UnlockScreen> with WidgetsBindingObserver
         ),
       );
       debugPrint('Authentication result: $authenticated');
-      if (authenticated && mounted) {
-        await _handleSuccess();
+      // if (authenticated && mounted) {
+      //   await _handleSuccess();
+      // }
+
+      if (!authenticated) {
+        _failedAttempts++;
+
+        if (_failedAttempts >= 5) {
+          await SessionManager().forceLogout(
+            reason: 'Too many failed attempts',
+          );
+        }
       }
     } on PlatformException catch (e) {
       debugPrint('Auth error: ${e.message}');

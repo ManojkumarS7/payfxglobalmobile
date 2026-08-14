@@ -23,7 +23,7 @@ class SenderDetailsViewModel extends ChangeNotifier {
   int? selectedStateId;
 
   // New field for residency status: 1 for Yes, 0 for No, null for unselected
-  int? resided180Days;
+  int? resided180Days = 1;
 
   bool isButtonEnabled = false;
   bool isLoading = false;

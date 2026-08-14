@@ -56,4 +56,5 @@ class ApiConstants {
   static const String getCurrencyRatesUrl =
       '$baseUrl/api_flutter/get_currency_rates.php';
   static const String createLoanApplicantUrl = '$baseUrl/loan_applicant.php';
+  static const String todayIbrRateUrl = '$baseUrl/app/customer/today-ibr-rate';
 }

@@ -32,6 +32,7 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
   final ScrollController _scrollController = ScrollController();
 
   final GlobalKey _reasonKey = GlobalKey();
+  final GlobalKey _accountHolderQuestionKey = GlobalKey();
   final GlobalKey _countryKey = GlobalKey();
   final GlobalKey _relationshipKey = GlobalKey();
   final GlobalKey _bankNameKey = GlobalKey();
@@ -166,20 +167,12 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
     super.dispose();
   }
 
-  Future<void> _checkSelfRemittance() async {
-    if (vm.selectedReasonId == null) return;
-
-    final result = await vm.checkSelfRemittance();
-    if (!mounted) return;
-
-    if (result['success'] == false) {
-      AppSnackbar.show(
-        context,
-        result['message'] ?? 'Self-remittance is not allowed for the selected reason.',
-        success: false,
-      );
+  void _checkSelfRemittanceLocally() {
+    if (vm.isSelfRemittanceDisallowed) {
+      _showSelfRemittanceNotAllowedDialog();
     }
   }
+
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -202,7 +195,9 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
     );
     if (picked != null) {
       vm.dobController.text =
-      "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+      "${picked.day.toString().padLeft(2, '0')}-${picked.month.toString().padLeft(2, '0')}-${picked.year}";
+      
+      _checkSelfRemittanceLocally();
       FocusScope.of(context).requestFocus(_addressFocus);
     }
   }
@@ -261,19 +256,50 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
                           key: _reasonKey,
                           child: vm.reasonsLoading
                               ? const Center(child: CustomLoadingIndicator())
-                              : _buildDropdownField<int>(
-                            label: 'Reason for Transfer',
-                            subLabel: 'You can\'t transfer amount to your own account other than education living cost purpose',
-                            value: vm.selectedReasonId,
-                            items: vm.reasons.map((reason) {
-                              return DropdownMenuItem<int>(
-                                value: reason['id'] as int,
-                                child: Text(
-                                  reason['reason_name'] as String,
+                              : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildDropdownField<int>(
+                                label: 'Reason for Transfer',
+                                value: vm.selectedReasonId,
+                                items: vm.reasons.map((reason) {
+                                  return DropdownMenuItem<int>(
+                                    value: reason['id'] as int,
+                                    child: Text(
+                                      reason['reason_name'] as String,
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: _onReasonSelected,
+                              ),
+                              const SizedBox(height: 8),
+                              InkWell(
+                                onTap: () => Navigator.pushNamed(context, '/support'),
+                                child: RichText(
+                                  text: const TextSpan(
+                                    style: TextStyle(
+                                      fontFamily: 'Satoshi',
+                                      fontSize: 13,
+                                      color: Colors.redAccent,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    children: [
+                                      TextSpan(
+                                          text:
+                                          'You can\'t transfer amount to your own account other than education living cost purpose. '),
+                                      TextSpan(
+                                        text: 'Contact Support Team',
+                                        style: TextStyle(
+                                          color: AppTheme.PrimaryColor,
+                                          fontWeight: FontWeight.bold,
+                                          decoration: TextDecoration.underline,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              );
-                            }).toList(),
-                            onChanged: _onReasonSelected,
+                              ),
+                            ],
                           ),
                         ),
 
@@ -281,6 +307,51 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
 
 
                         if (cfg != null) ...[
+                          Container(
+                            key: _accountHolderQuestionKey,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Are you an account holder, joint account holder, authorized signatory, or beneficial owner of the beneficiary account? *',
+                                  style: TextStyle(
+                                    fontFamily: 'Satoshi',
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: AppTheme.TextColor,
+                                  ),
+                                ),
+                                Row(
+                                  children: [
+                                    Radio<String>(
+                                      value: 'Yes',
+                                      groupValue: vm.isBeneficiaryAccountHolder,
+                                      activeColor: AppTheme.PrimaryColor,
+                                      onChanged: (val) {
+                                        vm.onBeneficiaryAccountHolderChanged(val);
+                                        _checkSelfRemittanceLocally();
+                                      },
+                                    ),
+                                    const Text('Yes', style: TextStyle(fontFamily: 'Satoshi')),
+                                    const SizedBox(width: 24),
+                                    Radio<String>(
+                                      value: 'No',
+                                      groupValue: vm.isBeneficiaryAccountHolder,
+                                      activeColor: AppTheme.PrimaryColor,
+                                      onChanged: (val) {
+                                        vm.onBeneficiaryAccountHolderChanged(val);
+                                        _checkSelfRemittanceLocally();
+                                      },
+                                    ),
+                                    const Text('No', style: TextStyle(fontFamily: 'Satoshi')),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 20),
+
                           if (vm.sendAmount >= 1000000) ...[
                             _buildTcsBanner(),
                             const SizedBox(height: 16),
@@ -369,7 +440,7 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
                                   ),
                                   if (vm.educationLoan == 'yes')
                                     _buildFileUploadTile(
-                                      label: 'Sanction Letter *',
+                                      label: 'Sanction Letter (Supported formats: JPG, PNG, PDF, DOC, DOCX. Maximum size: 10 MB.)*',
                                       file: vm.pickedFiles['sanction_letter'],
                                       onTap: isAllDisabled ? null : () =>
                                           vm.pickFile('sanction_letter'),
@@ -417,7 +488,7 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
                             enabled: !isAllDisabled,
                             focusNode: _nameFocus,
                             onFieldSubmitted: (_) {
-                              _checkSelfRemittance(); // Call API on submit
+                              _checkSelfRemittanceLocally();                   
                               if (cfg.showDobField) {
                                 FocusScope.of(context).requestFocus(_dobFocus);
                               } else {
@@ -436,12 +507,15 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
                               enabled: !isAllDisabled,
                               focusNode: _dobFocus,
 
-                              hintText: 'YYYY-MM-DD',
+                              hintText: 'DD-MM-YYYY',
                               suffixIcon: IconButton(
                                 icon: const Icon(Icons.calendar_month, color: AppTheme.PrimaryColor),
                                 onPressed: isAllDisabled ? null : () => _selectDate(context),
                               ),
-
+                              onFieldSubmitted: (_) {
+                                _checkSelfRemittanceLocally();
+                                FocusScope.of(context).requestFocus(_addressFocus);
+                              },
                             ),
                             const SizedBox(height: 16),
                           ],
@@ -473,14 +547,22 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
                               children: cfg.requiredDocuments.map((doc) {
                                 return _buildFileUploadTile(
                                   label: doc.label +
-                                      (doc.required ? ' *' : ' (Optional)'),
+                                      (doc.required
+                                          ? ' *\n(JPG, PNG, PDF, DOC, DOCX • Max 10 MB)'
+                                          : ' (Optional)'),
                                   file: vm.pickedFiles[doc.key],
-                                  onTap: isAllDisabled ? null : () => vm.pickFile(doc.key),
+                                  onTap: isAllDisabled
+                                      ? null
+                                      : () async {
+                                    final error = await vm.pickFile(doc.key);
+                                    if (error != null && context.mounted) {
+                                      AppSnackbar.show(context, error, success: false);
+                                    }
+                                  },
                                 );
                               }).toList(),
                             ),
                           ),
-
 
                           Container(
                             key: _countryKey,
@@ -725,8 +807,7 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
                             const SizedBox(height: 16),
                           ],
                         ],
-
-                        const SizedBox(height: 48),
+                        const SizedBox(height: 24),
                       ],
                     ),
                   ),
@@ -796,6 +877,16 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
       AppSnackbar.show(
         context,
         'Please select a reason for transfer',
+        success: false,
+      );
+      return false;
+    }
+
+    if (vm.isBeneficiaryAccountHolder == null) {
+      _scrollToKey(_accountHolderQuestionKey);
+      AppSnackbar.show(
+        context,
+        'Please answer the beneficiary account holder question',
         success: false,
       );
       return false;
@@ -968,16 +1059,8 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
     if (args?['from_dashboard'] == true) {
       Navigator.pop(context); // Simply go back to Dashboard
     } else {
+      Navigator.pop(context);
 
-      Navigator.pushReplacementNamed(
-        context,
-        '/transaction-receipt',
-        arguments: {
-          'transaction_id': args?['transaction_id'],
-          'user_id': args?['user_id'],
-          'api_key': args?['api_key'],
-        },
-      );
     }
   }
 
@@ -1187,10 +1270,10 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      const Text(
-                        'Self-remittance is not allowed for this transaction. Please select a different relationship.',
+                      Text(
+                        vm.selfRemittanceErrorMessage ?? 'Self-remittance is not allowed for this transaction. Please select a different relationship.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontFamily: 'Satoshi',
                           fontSize: 15,
                           height: 1.6,
@@ -1219,6 +1302,34 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
                               fontSize: 15,
                               color: Colors.white,
                             ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      InkWell(
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.pushNamed(context, '/support');
+                        },
+                        child: RichText(
+                          textAlign: TextAlign.center,
+                          text: const TextSpan(
+                            style: TextStyle(
+                              fontFamily: 'Satoshi',
+                              fontSize: 14,
+                              color: Colors.black54,
+                            ),
+                            children: [
+                              TextSpan(text: 'Have any queries? '),
+                              TextSpan(
+                                text: 'Contact Support Team',
+                                style: TextStyle(
+                                  color: AppTheme.PrimaryColor,
+                                  fontWeight: FontWeight.bold,
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),

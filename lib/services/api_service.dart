@@ -21,6 +21,7 @@ class ApiService {
   static Future<void> setApiKey(String key) async {
     _cachedApiKey = key;
     await _secureStorage.write(key: 'api_key', value: key);
+    debugPrint('✅ API Key stored: $key');
     debugPrint('✅ API Key stored securely and cached globally');
   }
 
@@ -41,7 +42,7 @@ class ApiService {
   static Future<void> initializeApiKey() async {
     if (_cachedApiKey == null) {
       _cachedApiKey = await _secureStorage.read(key: 'api_key');
-      debugPrint('✅ API Key initialized globally from secure storage');
+      debugPrint('✅ API Key initialized globally from secure storage: $_cachedApiKey');
     }
   }
 
@@ -55,16 +56,39 @@ class ApiService {
   /// Get authorization headers with Bearer token
   static Future<Map<String, String>> authHeaders() async {
     final apiKey = await getApiKey();
+    final token = apiKey ?? '';
     return {
       'Accept': 'application/json',
-      'Auth': 'Bearer ${apiKey ?? ''}',
+      'Auth': 'Bearer $token',
+      'Authorization': 'Bearer $token',
     };
   }
 
   /// Check if user is authenticated
+  // static Future<bool> isAuthenticated() async {
+  //   final apiKey = await getApiKey();
+  //   return apiKey != null && apiKey.isNotEmpty;
+  // }
+
   static Future<bool> isAuthenticated() async {
-    final apiKey = await getApiKey();
-    return apiKey != null && apiKey.isNotEmpty;
+    final token = await getApiKey();
+
+    if (token == null || token.isEmpty) {
+      return false;
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse('https://www.payfxglobal.com/app/customer/profile'),
+        headers: {
+          'Auth': 'Bearer $token',
+        },
+      );
+
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
   }
 
   /// Complete logout - clear all user data
@@ -589,6 +613,7 @@ class ApiService {
     String? tcsAmount,
     String? inrAmountCal,
     required Map<String, PlatformFile?> files,
+    String accountHolder = 'No',
   }) async {
     final uri = Uri.parse(ApiConstants.createTransactionUrl);
     final request = http.MultipartRequest('POST', uri);
@@ -629,6 +654,7 @@ class ApiService {
       if (ukSortCode != null) 'uk_sort_code': ukSortCode,
       if (tcsAmount != null) 'tcs_amount': tcsAmount,
       if (inrAmountCal != null) 'inr_amount_cal': inrAmountCal,
+      'account_holder': accountHolder,
     });
     for (final entry in files.entries) {
       if (entry.value?.path != null) {

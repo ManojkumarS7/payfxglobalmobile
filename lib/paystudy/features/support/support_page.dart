@@ -13,7 +13,7 @@ class _SupportPageState extends State<SupportPage> {
   Future<void> openEmail() async {
     final Uri emailUri = Uri(
       scheme: 'mailto',
-      path: 'care@paystudy.in',
+      path: 'care@payfxglobal.com',
       queryParameters: {'subject': 'Support Request', 'body': 'Hello Team'},
     );
 

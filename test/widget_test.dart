@@ -11,14 +11,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:payfxglobal/main.dart';
 
 void main() {
-  testWidgets('PayUni app starts with login screen', (
+  testWidgets('PayFX Global app starts with login screen', (
     WidgetTester tester,
   ) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const PayUniApp());
+    await tester.pumpWidget(const PayFXGlobal());
 
     // Verify that our app starts with the login screen.
-    expect(find.text('PayUni'), findsOneWidget);
+    expect(find.text('PayFX Global'), findsOneWidget);
     expect(find.text('Welcome Back'), findsOneWidget);
     expect(find.text('Sign In'), findsOneWidget);
 
@@ -31,7 +31,7 @@ void main() {
 
   testWidgets('Login form validation works', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const PayUniApp());
+    await tester.pumpWidget(const PayFXGlobal());
 
     // Find the Sign In button and tap it without entering credentials
     final signInButton = find.widgetWithText(ElevatedButton, 'Sign In');

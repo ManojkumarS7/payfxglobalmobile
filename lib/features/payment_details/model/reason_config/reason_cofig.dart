@@ -98,6 +98,7 @@ class ReasonConfig {
         RequiredDocument(key: 'proof_of_funds', label: 'Proof of Funds'),
       ];
     } else if (name.contains('conference')) {
+
       docs = [
         RequiredDocument(key: 'invoice_copy', label: 'Payment Invoice Copy'),
         RequiredDocument(key: 'Passport_doc', label: 'Passport'),
@@ -106,6 +107,7 @@ class ReasonConfig {
         RequiredDocument(key: 'invitation_copy', label: 'Invitation Copy'),
       ];
     } else if (name.contains('skill assessment')) {
+
       docs = [
         RequiredDocument(key: 'Passport_doc', label: 'Passport'),
         RequiredDocument(key: 'authority_copy', label: 'Letter for Assessing Authority'),
