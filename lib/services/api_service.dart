@@ -10,9 +10,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 
-
-
-
 class ApiService {
   static const _secureStorage = FlutterSecureStorage();
   static String? _cachedApiKey;
@@ -47,10 +44,12 @@ class ApiService {
   }
 
   /// Clear API token from secure storage
-  static Future<void> clearApiKey() async {
+  static Future<void> logout() async {
     _cachedApiKey = null;
     await _secureStorage.delete(key: 'api_key');
-    debugPrint('✅ API Key cleared');
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    debugPrint(' User logged out - all data cleared');
   }
 
   /// Get authorization headers with Bearer token
@@ -63,12 +62,6 @@ class ApiService {
       'Authorization': 'Bearer $token',
     };
   }
-
-  /// Check if user is authenticated
-  // static Future<bool> isAuthenticated() async {
-  //   final apiKey = await getApiKey();
-  //   return apiKey != null && apiKey.isNotEmpty;
-  // }
 
   static Future<bool> isAuthenticated() async {
     final token = await getApiKey();
@@ -91,23 +84,12 @@ class ApiService {
     }
   }
 
-  /// Complete logout - clear all user data
-  static Future<void> logout() async {
-    _cachedApiKey = null;
-    await _secureStorage.delete(key: 'api_key');
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
-    debugPrint(' User logged out - all data cleared');
-  }
-
-  /// Alias for getApiKey() - returns the token
   static Future<String?> getToken() async {
     return await getApiKey();
   }
 
   static Future<Map> getCurrencyRates() async {
     final res = await http.get(Uri.parse(ApiConstants.getCurrencyRatesUrl));
-    debugPrint('CURRENCY RATES STATUS: ${res.statusCode}');
     if (res.statusCode == 200) {
       final decoded = jsonDecode(res.body);
       if (decoded is Map && decoded['success'] == true) {
@@ -142,21 +124,8 @@ class ApiService {
           "transaction": transaction,
         },
       );
-
-      print(response);
-
-      print("Status Code: ${response.statusCode}");
-      print("Response: ${response.body}");
-
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-
-        print("Cashfree Order Data: $data");
-        print("Order ID: ${data['order_id'] ?? data['data']?['order_id']}");
-        print("Payment Session ID: ${data['payment_session_id'] ?? data['data']?['payment_session_id']}");
-
-        return data;
-        return data;
+        return jsonDecode(response.body);
       } else {
         throw Exception("Failed to create order");
       }
@@ -171,7 +140,6 @@ class ApiService {
       Uri.parse(ApiConstants.getReasonsUrl),
       headers: headers,
     );
-    debugPrint('REASONS STATUS: ${res.statusCode}');
     if (res.statusCode == 200) {
       final decoded = jsonDecode(res.body);
       if (decoded is Map && decoded['data'] is List) {
@@ -185,25 +153,19 @@ class ApiService {
 
   static Future<List<dynamic>> fetchRecipients() async {
     final headers = await ApiService.authHeaders();
-
     final response = await http.get(
       Uri.parse('$ApiConstants/app/customer/recipient-list'),
       headers: headers,
     );
-
-    print(Uri.parse('$ApiConstants/app/customer/recipient-list'));
-
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       return data['data'] ?? [];
     } else if (response.statusCode == 404) {
-      // Gracefully handle "not found" as an empty list
       return [];
     } else {
       throw Exception('Failed to load recipients: ${response.statusCode}');
     }
   }
-
 
   static Future<List<Map<String, dynamic>>> getDeliveryMethod() async {
     final headers = await authHeaders();
@@ -211,7 +173,6 @@ class ApiService {
       Uri.parse(ApiConstants.getDeliveryMethodUrl),
       headers: headers,
     );
-    debugPrint('DELIVERY METHOD STATUS: ${res.statusCode}');
     if (res.statusCode == 200) {
       final decoded = jsonDecode(res.body);
       if (decoded is Map && decoded['data'] is List) {
@@ -229,13 +190,8 @@ class ApiService {
       Uri.parse(ApiConstants.getSourceOfFundUrl),
       headers: headers,
     );
-
-    debugPrint('SOF STATUS: ${res.statusCode}');
-    debugPrint('SOF BODY: ${res.body}');
-
     if (res.statusCode == 200) {
       final decoded = jsonDecode(res.body);
-
       if (decoded is Map && decoded['data'] is List) {
         return List<Map<String, dynamic>>.from(decoded['data']);
       } else {
@@ -245,29 +201,16 @@ class ApiService {
       throw Exception('HTTP ${res.statusCode}');
     }
   }
-  static Future<Map<String, dynamic>?> paymentReturn({
-    required String order_id,
-  }) async {
+
+  static Future<Map<String, dynamic>?> paymentReturn({required String order_id}) async {
     try {
       final headers = await authHeaders();
-
-      final url =
-
-
-      Uri.parse('${ApiConstants.paymentReturnUrl}?order_id=$order_id');
-
-      debugPrint("API URL: $url");
-
+      final url = Uri.parse('${ApiConstants.paymentReturnUrl}?order_id=$order_id');
       final res = await http.get(url, headers: headers);
-
-      debugPrint('STATUS: ${res.statusCode}');
-      debugPrint('BODY: ${res.body}');
-
       if (res.statusCode == 200) {
         final decoded = jsonDecode(res.body);
-
         if (decoded is Map<String, dynamic>) {
-          return decoded; // ✅ Correct (Map)
+          return decoded;
         } else {
           throw Exception('Invalid response format');
         }
@@ -275,8 +218,7 @@ class ApiService {
         throw Exception('HTTP ${res.statusCode}');
       }
     } catch (e) {
-      debugPrint("paymentReturn Error: $e");
-      return null; // ✅ prevent crash
+      return null;
     }
   }
 
@@ -297,7 +239,6 @@ class ApiService {
     try {
       final uri = Uri.parse(ApiConstants.submitKyc);
       final headers = await authHeaders();
-
       final request = http.MultipartRequest('POST', uri)
         ..headers.addAll(headers)
         ..fields.addAll({
@@ -308,69 +249,29 @@ class ApiService {
           'source_of_fund': sourceOfFundId.toString(),
           'income_range': incomeRange,
           'pep_status': pepStatus,
-          if (pepDetails != null && pepDetails.isNotEmpty)
-            'pep_details': pepDetails,
+          if (pepDetails != null && pepDetails.isNotEmpty) 'pep_details': pepDetails,
         });
-
-      request.files.add(
-        await http.MultipartFile.fromPath(
-          'aadhaar_front_file',
-          aadhaarFrontFile.path,
-        ),
-      );
+      request.files.add(await http.MultipartFile.fromPath('aadhaar_front_file', aadhaarFrontFile.path));
       if (aadhaarBackFile != null && aadhaarBackFile.path.isNotEmpty) {
-        request.files.add(
-          await http.MultipartFile.fromPath(
-            'aadhaar_back_file',
-            aadhaarBackFile.path,
-          ),
-        );
+        request.files.add(await http.MultipartFile.fromPath('aadhaar_back_file', aadhaarBackFile.path));
       }
-      request.files.add(
-        await http.MultipartFile.fromPath('pan_front_file', panFrontFile.path),
-      );
+      request.files.add(await http.MultipartFile.fromPath('pan_front_file', panFrontFile.path));
       if (panBackFile != null && panBackFile.path.isNotEmpty) {
-        request.files.add(
-          await http.MultipartFile.fromPath('pan_back_file', panBackFile.path),
-        );
+        request.files.add(await http.MultipartFile.fromPath('pan_back_file', panBackFile.path));
       }
-
       final streamed = await request.send().timeout(const Duration(seconds: 30));
       final response = await http.Response.fromStream(streamed);
-
-      debugPrint('KYC RESPONSE: ${response.statusCode}');
-      debugPrint('KYC BODY: ${response.body}');
       final body = jsonDecode(response.body);
-
-      if (response.statusCode == 200) {
-        return body;
-      }
-
-      if (response.statusCode == 422) {
-        return {
-          'success': false,
-          'message': body['message'] ?? 'Validation error',
-          'errors': body['errors'],
-        };
-      }
-
+      if (response.statusCode == 200) return body;
       return {'success': false, 'message': body['message'] ?? 'Server error'};
     } catch (e) {
-      return {
-        'success': false,
-        'message': 'Network error',
-        'error': e.toString(),
-      };
+      return {'success': false, 'message': 'Network error', 'error': e.toString()};
     }
   }
 
-  static Future<Map<String, dynamic>> getOfflinePaymentDetails({
-    required int transactionId,
-  }) async {
+  static Future<Map<String, dynamic>> getOfflinePaymentDetails({required int transactionId}) async {
     final token = await getToken();
     final uri = Uri.parse('${ApiConstants.getOfflinePaymentUrl}/$transactionId');
-
-    print(uri);
     final response = await http.get(
       uri,
       headers: {
@@ -380,19 +281,11 @@ class ApiService {
       },
     );
     final body = jsonDecode(response.body);
-    if (response.statusCode == 200) {
-      return body;
-    }
-    return {
-      'success': false,
-      'message': body['message'] ?? 'Failed to fetch offline payment details',
-    };
+    if (response.statusCode == 200) return body;
+    return {'success': false, 'message': body['message'] ?? 'Failed to fetch details'};
   }
 
-  static Future<Map<String, dynamic>> submitUtr({
-    required int transactionId,
-    required String utrNumber,
-  }) async {
+  static Future<Map<String, dynamic>> submitUtr({required int transactionId, required String utrNumber}) async {
     final headers = await authHeaders();
     final url = Uri.parse(ApiConstants.getSubmitUtrUrl);
     final response = await http.post(
@@ -401,26 +294,16 @@ class ApiService {
       body: jsonEncode({'transaction_id': transactionId, 'utr_number': utrNumber}),
     );
     final body = jsonDecode(response.body);
-    if (response.statusCode == 200 && body['success'] == true) {
-      return body;
-    } else {
-      throw body['message'] ?? 'Failed to submit UTR';
-    }
+    if (response.statusCode == 200 && body['success'] == true) return body;
+    throw body['message'] ?? 'Failed to submit UTR';
   }
 
   static Future<Map<String, dynamic>> getDashboard() async {
     final headers = await authHeaders();
-    final res = await http.get(
-      Uri.parse('https://www.payfx.in/app/customer/dashboard'),
-      headers: headers,
-    );
-    if (res.statusCode == 200) {
-      return jsonDecode(res.body);
-    }
-    throw Exception('Failed to load dashboard (${res.statusCode})');
+    final res = await http.get(Uri.parse('https://www.payfx.in/app/customer/dashboard'), headers: headers);
+    if (res.statusCode == 200) return jsonDecode(res.body);
+    throw Exception('Failed to load dashboard');
   }
-
-
 
   static Future<void> launchURL(String url) async {
     if (await canLaunchUrl(Uri.parse(url))) {
@@ -430,58 +313,34 @@ class ApiService {
     }
   }
 
-  static Future<Map<String, dynamic>> verifyPan({
-    required String pan,
-    required String aadhaar,
-    required int userId,
-  }) async {
+  static Future<Map<String, dynamic>> verifyPan({required String pan, required String aadhaar, required int userId}) async {
     final headers = await authHeaders();
     final response = await http.post(
       Uri.parse(ApiConstants.verifyPanUrl),
       headers: {...headers, 'Content-Type': 'application/json'},
       body: jsonEncode({'pan_number': pan, 'aadhaar': aadhaar, 'user_id': userId}),
     );
-    if (response.statusCode != 200) {
-      return {'status': 'INVALID', 'message': 'Server error (${response.statusCode})'};
-    }
-    if (!response.headers['content-type']!.contains('application/json')) {
-      return {'status': 'INVALID', 'message': 'Invalid server response'};
-    }
+    if (response.statusCode != 200) return {'status': 'INVALID', 'message': 'Server error'};
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
-  static Future<Map<String, dynamic>> verifyPan2({
-    required String pan,
-    required int userId,
-  }) async {
+  static Future<Map<String, dynamic>> verifyPan2({required String pan, required int userId}) async {
     final headers = await authHeaders();
-    print(headers);
     final response = await http.post(
       Uri.parse(ApiConstants.verifyPanUrl2),
       headers: {...headers, 'Content-Type': 'application/json'},
       body: jsonEncode({'pan_number': pan, 'user_id': userId}),
     );
-    if (response.statusCode != 200) {
-      return {'status': 'INVALID', 'message': 'Server error (${response.statusCode})'};
-    }
-    if (!response.headers['content-type']!.contains('application/json')) {
-      return {'status': 'INVALID', 'message': 'Invalid server response'};
-    }
+    if (response.statusCode != 200) return {'status': 'INVALID', 'message': 'Server error'};
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
-
-
 
   static Future<List<dynamic>> getStates() async {
     final headers = await authHeaders();
     final response = await http.get(Uri.parse(ApiConstants.getStatesUrl), headers: headers);
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body)['data'];
-    } else {
-      throw Exception('Failed to load states');
-    }
+    if (response.statusCode == 200) return jsonDecode(response.body)['data'];
+    throw Exception('Failed to load states');
   }
-
 
   static Future<Map<String, dynamic>> saveSenderDetails({
     required int userId,
@@ -517,7 +376,6 @@ class ApiService {
         'payment_option': 'BANK',
       }),
     );
-    print(jsonDecode(response.body));
     return jsonDecode(response.body);
   }
 
@@ -527,52 +385,26 @@ class ApiService {
       Uri.parse('${ApiConstants.checkSenderDetailsUrl}?customer_id=$customerId'),
       headers: {...headers, 'Content-Type': 'application/json'},
     );
-
-    print(Uri.parse('${ApiConstants.checkSenderDetailsUrl}?customer_id=$customerId'));
-    print(response);
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else if (response.statusCode == 401) {
-      throw Exception("Unauthorized - Please login again");
-    } else {
-      throw Exception('Failed (${response.statusCode})');
-    }
+    if (response.statusCode == 200) return jsonDecode(response.body);
+    throw Exception('Failed to check sender details');
   }
 
-  static Future<Map<String, dynamic>> checkQuestionsAnswers({
-    required int customerId,
-    int? transactionId,
-  }) async {
+  static Future<Map<String, dynamic>> checkQuestionsAnswers({required int customerId, int? transactionId}) async {
     final headers = await authHeaders();
     String url = '${ApiConstants.checkQuestionsAnswersUrl}?customer_id=$customerId';
-    print(url);
     if (transactionId != null) url += '&transaction_id=$transactionId';
     final response = await http.get(Uri.parse(url), headers: headers);
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else if (response.statusCode == 401) {
-      throw Exception("Unauthorized - Please login again");
-    } else {
-      throw Exception('Failed (${response.statusCode})');
-    }
+    if (response.statusCode == 200) return jsonDecode(response.body);
+    throw Exception('Failed to check questions');
   }
 
-  static Future<Map<String, dynamic>> checkUploadedFiles({
-    required int customerId,
-    int? transactionId,
-  }) async {
+  static Future<Map<String, dynamic>> checkUploadedFiles({required int customerId, int? transactionId}) async {
     final headers = await authHeaders();
     String url = '${ApiConstants.checkUploadedFilesUrl}?customer_id=$customerId';
-    print(url);
     if (transactionId != null) url += '&transaction_id=$transactionId';
     final response = await http.get(Uri.parse(url), headers: headers);
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else if (response.statusCode == 401) {
-      throw Exception("Unauthorized - Please login again");
-    } else {
-      throw Exception('Failed (${response.statusCode})');
-    }
+    if (response.statusCode == 200) return jsonDecode(response.body);
+    throw Exception('Failed to check files');
   }
 
   static Future<Map<String, dynamic>> createTransaction({
@@ -614,6 +446,8 @@ class ApiService {
     String? inrAmountCal,
     required Map<String, PlatformFile?> files,
     String accountHolder = 'No',
+    String? correspondingBankName,
+    String? correspondingBankSwift,
   }) async {
     final uri = Uri.parse(ApiConstants.createTransactionUrl);
     final request = http.MultipartRequest('POST', uri);
@@ -655,6 +489,8 @@ class ApiService {
       if (tcsAmount != null) 'tcs_amount': tcsAmount,
       if (inrAmountCal != null) 'inr_amount_cal': inrAmountCal,
       'account_holder': accountHolder,
+      if (correspondingBankName != null) 'corresponding_bank_name': correspondingBankName,
+      if (correspondingBankSwift != null) 'corresponding_bank_swift': correspondingBankSwift,
     });
     for (final entry in files.entries) {
       if (entry.value?.path != null) {
@@ -663,25 +499,19 @@ class ApiService {
     }
     final streamed = await request.send();
     final response = await http.Response.fromStream(streamed);
-    print(response);
     return jsonDecode(response.body);
   }
 
   static Future<List<dynamic>> getCountries() async {
     final headers = await authHeaders();
     final response = await http.get(Uri.parse(ApiConstants.getCountriesUrl), headers: headers);
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body)['data'];
-    }
+    if (response.statusCode == 200) return jsonDecode(response.body)['data'];
     throw Exception('Failed to load countries');
   }
 
   static Future<List<Map<String, dynamic>>> getUniversitiesByCountry(int countryId) async {
     final headers = await authHeaders();
-    final response = await http.get(
-      Uri.parse('${ApiConstants.getUniversitiesUrl}?country_id=$countryId'),
-      headers: headers,
-    );
+    final response = await http.get(Uri.parse('${ApiConstants.getUniversitiesUrl}?country_id=$countryId'), headers: headers);
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       if (data['success'] == true) return List<Map<String, dynamic>>.from(data['data']);
@@ -696,9 +526,6 @@ class ApiService {
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'email': email, 'otp': otp}),
     );
-    if (!response.headers['content-type']!.contains('application/json')) {
-      throw Exception('Server returned non-JSON response');
-    }
     return jsonDecode(response.body);
   }
 
@@ -713,169 +540,60 @@ class ApiService {
 
   static Future<Map<String, dynamic>> createLoanApplicant({required Map<String, dynamic> data}) async {
     final headers = await authHeaders();
-    final response = await http.post(
-      Uri.parse(ApiConstants.createLoanApplicantUrl),
-      headers: {...headers, 'Content-Type': 'application/json'},
-      body: jsonEncode(data),
-    );
+    final response = await http.post(Uri.parse(ApiConstants.createLoanApplicantUrl), headers: {...headers, 'Content-Type': 'application/json'}, body: jsonEncode(data));
     return jsonDecode(response.body);
   }
-
 
   static Future<Map<String, dynamic>> sendOtp({required String email}) async {
-
-    final response = await http.post(
-      Uri.parse(ApiConstants.sendOtpUrl),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': email,'from_source':2,}),
-    );
+    final response = await http.post(Uri.parse(ApiConstants.sendOtpUrl), headers: {'Content-Type': 'application/json'}, body: jsonEncode({'email': email, 'from_source': 2}));
     return jsonDecode(response.body);
   }
 
-  static Future<Map<String, dynamic>> sendOtp2({required String email}) async {
-    final response = await http.post(
-      Uri.parse(ApiConstants.sendOtpUrl2),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': email}),
-
-
-    );
+  static Future<Map<String, dynamic>> newUserReg({required String email, required String password}) async {
+    final response = await http.post(Uri.parse(ApiConstants.newUserRegUrl), headers: {'Content-Type': 'application/json'}, body: jsonEncode({'email': email, 'password': password}));
     return jsonDecode(response.body);
-
-
-  }
-
-
-
-  static Future<Map<String, dynamic>> newUserReg({
-    required String email,
-    required String password,
-  }) async {
-
-    final response = await http.post(
-      Uri.parse(ApiConstants.newUserRegUrl),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'email': email,
-        'password': password,
-
-      }),
-    );
-
-    // FULL RESPONSE PRINT
-    debugPrint('STATUS CODE: ${response.statusCode}');
-    debugPrint('HEADERS: ${response.headers}');
-    debugPrint('BODY: ${response.body}');
-
-    if (response.body.isEmpty) {
-      return {
-        'success': false,
-        'error': 'Empty response from server',
-      };
-    }
-
-    try {
-      final data = jsonDecode(response.body);
-
-      debugPrint('DECODED RESPONSE: $data');
-
-      return data;
-    } catch (e) {
-
-      debugPrint('JSON PARSE ERROR: $e');
-
-      return {
-        'success': false,
-        'error': 'Invalid response format',
-      };
-    }
   }
 
   static Future<List<Map<String, dynamic>>> getOccupations() async {
     final headers = await authHeaders();
     final res = await http.get(Uri.parse(ApiConstants.getOccupationsUrl), headers: headers);
-    debugPrint('OCCUPATIONS STATUS: ${res.statusCode}');
     if (res.statusCode == 200) {
       final decoded = jsonDecode(res.body);
       if (decoded is Map && decoded['data'] is List) return List<Map<String, dynamic>>.from(decoded['data']);
-      throw Exception('Invalid occupations response format');
+      throw Exception('Invalid occupations response');
     } else {
       throw Exception('HTTP ${res.statusCode}');
     }
   }
 
-  static Future<Map<String, dynamic>> selectRecipient({
-    required int userId,
-    required int transactionId,
-    required int recipientId,
-  }) async {
-    final apiKey = await getApiKey();
+  static Future<Map<String, dynamic>> selectRecipient({required int userId, required int transactionId, required int recipientId}) async {
     final headers = await authHeaders();
     final response = await http.post(
       Uri.parse(ApiConstants.selectRecipientUrl),
       headers: {...headers, 'Content-Type': 'application/json'},
       body: jsonEncode({'user_id': userId, 'transaction_id': transactionId, 'selected_recipient': recipientId}),
     );
-    print(response);
     if (response.statusCode == 200) return jsonDecode(response.body);
-    throw Exception('Failed to select recipient (${response.statusCode})');
+    throw Exception('Failed to select recipient');
   }
 
-  static Future<Map<String, dynamic>> resetPassword({
-    required String email,
-    required String newPassword,
-  }) async {
-    print('resetPassword → email: $email | password: $newPassword'); // debug
-    print('URL: ${ApiConstants.updatePasswordUrl}'); // debug
-
-    final response = await http.post(
-      Uri.parse(ApiConstants.updatePasswordUrl),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({'email': email, 'password': newPassword}),
-    );
-
-    print('Response: ${response.statusCode} → ${response.body}'); // debug
+  static Future<Map<String, dynamic>> resetPassword({required String email, required String newPassword}) async {
+    final response = await http.post(Uri.parse(ApiConstants.updatePasswordUrl), headers: {'Content-Type': 'application/json'}, body: jsonEncode({'email': email, 'password': newPassword}));
     return jsonDecode(response.body);
   }
 
   static Future<Map<String, dynamic>> deleteRecipient({required int recipientId}) async {
     final headers = await authHeaders();
-    print(headers);
-    final response = await http.post(
-      Uri.parse(ApiConstants.deleteRecipientUrl),
-      headers: {...headers, 'Content-Type': 'application/json'},
-      body: jsonEncode({'recipient_id': recipientId}),
-    );
-
+    final response = await http.post(Uri.parse(ApiConstants.deleteRecipientUrl), headers: {...headers, 'Content-Type': 'application/json'}, body: jsonEncode({'recipient_id': recipientId}));
     if (response.statusCode == 200) return jsonDecode(response.body);
-    print('Response: ${response.statusCode} → ${response.body}');
-    return {'success': false, 'message': 'Failed to delete recipient (Status: ${response.statusCode})'};
-  }
-
-  static Future<String?> downloadFile(String url) async {
-    try {
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode != 200) return null;
-      final uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-        return url;
-      }
-      return url;
-    } catch (e) {
-      debugPrint('Download file error: $e');
-      return null;
-    }
+    return {'success': false, 'message': 'Failed to delete recipient'};
   }
 
   static Future<Map<String, dynamic>> getFullProfile() async {
     final headers = await authHeaders();
     final response = await http.get(Uri.parse(ApiConstants.fullProfileUrl), headers: headers);
     if (response.statusCode == 200) return jsonDecode(response.body);
-    if (response.statusCode == 401) throw Exception('Unauthorized - Please login again');
-    throw Exception('Failed to load profile (${response.statusCode})');
+    throw Exception('Failed to load profile');
   }
 
   static Future<Map<String, dynamic>> updateProfile({
@@ -908,61 +626,22 @@ class ApiService {
     return jsonDecode(response.body);
   }
 
-
-
-  static Future<Map<String, dynamic>> changePassword({
-    required String currentPassword,
-    required String newPassword,
-    required String confirmPassword,
-  }) async {
+  static Future<Map<String, dynamic>> changePassword({required String currentPassword, required String newPassword, required String confirmPassword}) async {
     final headers = await authHeaders();
-    final response = await http.post(
-      Uri.parse(ApiConstants.changePasswordUrl),
-      headers: {...headers, 'Content-Type': 'application/json'},
-      body: jsonEncode({'current_password': currentPassword, 'new_password': newPassword, 'confirm_password': confirmPassword}),
-    );
+    final response = await http.post(Uri.parse(ApiConstants.changePasswordUrl), headers: {...headers, 'Content-Type': 'application/json'}, body: jsonEncode({'current_password': currentPassword, 'new_password': newPassword, 'confirm_password': confirmPassword}));
     return jsonDecode(response.body);
   }
 
   static Future<Map<String, dynamic>> deleteAccount({required String password, required String email}) async {
     final headers = await authHeaders();
-    final response = await http.post(
-      Uri.parse(ApiConstants.deleteAccountUrl),
-      headers: {...headers, 'Content-Type': 'application/json'},
-      body: jsonEncode({'password': password, 'email' : email}),
-    );
+    final response = await http.post(Uri.parse(ApiConstants.deleteAccountUrl), headers: {...headers, 'Content-Type': 'application/json'}, body: jsonEncode({'password': password, 'email': email}));
     return jsonDecode(response.body);
   }
 
-
-
-  static Future<Map<String, dynamic>> paymentMode({
-    required String transactionId,
-    required String paymentMode,
-  }) async {
+  static Future<Map<String, dynamic>> paymentMode({required String transactionId, required String paymentMode}) async {
     final headers = await authHeaders();
-
-
-    final body = {
-      'transaction_id': transactionId,
-      'payment_mode': paymentMode,
-    };
-
-    debugPrint('🚀 Payment Mode API URL: ${ApiConstants.paymentMethodUrl}');
-    debugPrint('📤 Payment Mode Request: ${jsonEncode(body)}');
-
-    final response = await http.post(
-      Uri.parse(ApiConstants.paymentMethodUrl),
-      headers: {
-        ...headers,
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode(body),
-    );
-
-    debugPrint('📥 Status Code: ${response.statusCode}');
-    debugPrint('📄 Response Body: ${response.body}');
-
+    final body = {'transaction_id': transactionId, 'payment_mode': paymentMode};
+    final response = await http.post(Uri.parse(ApiConstants.paymentMethodUrl), headers: {...headers, 'Content-Type': 'application/json'}, body: jsonEncode(body));
     return jsonDecode(response.body);
   }
 
@@ -975,42 +654,14 @@ class ApiService {
 
   static Future<Map<String, dynamic>> getTransactionSummary({required int transactionId}) async {
     final headers = await authHeaders();
-    final response = await http.post(
-      Uri.parse(ApiConstants.transactionSummaryUrl),
-      headers: {...headers, 'Content-Type': 'application/json'},
-      body: jsonEncode({'transaction_id': transactionId}),
-    );
+    final response = await http.post(Uri.parse(ApiConstants.transactionSummaryUrl), headers: {...headers, 'Content-Type': 'application/json'}, body: jsonEncode({'transaction_id': transactionId}));
     if (response.statusCode == 200) return jsonDecode(response.body);
-    throw Exception('Failed to load summary (${response.statusCode})');
+    throw Exception('Failed to load summary');
   }
 
-  static Future<void> downloadBill(int transactionId) async {
-    final url = '${ApiConstants.downloadBillUrl}/$transactionId';
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      throw Exception('Could not open bill');
-    }
-  }
-
-  static Future<Map<String, dynamic>> checkSelfRemittance({
-    required int reasonId,
-    required String name,
-    required int customerId,
-  }) async {
+  static Future<Map<String, dynamic>> checkSelfRemittance({required int reasonId, required String name, required int customerId}) async {
     final headers = await authHeaders();
-    final response = await http.post(
-      Uri.parse(ApiConstants.checkSelfRemittanceUrl),
-      headers: headers,
-      body: {
-        'reason_id': reasonId.toString(),
-        'name': name,
-        'customer_id': customerId.toString(),
-      },
-    );
-    debugPrint('CHECK SELF REMITTANCE STATUS: ${response.statusCode}');
-    debugPrint('CHECK SELF REMITTANCE BODY: ${response.body}');
+    final response = await http.post(Uri.parse(ApiConstants.checkSelfRemittanceUrl), headers: headers, body: {'reason_id': reasonId.toString(), 'name': name, 'customer_id': customerId.toString()});
     return jsonDecode(response.body);
   }
 

@@ -56,6 +56,10 @@ class PaymentDetailsViewModel extends ChangeNotifier {
   final ibanController = TextEditingController();
   final sortCodeController = TextEditingController();
 
+  // New controllers for corresponding bank (Excel rows 15 & 20)
+  final correspondingBankNameController = TextEditingController();
+  final correspondingBankSwiftCodeController = TextEditingController();
+
   ReasonConfig? get currentConfig {
     if (selectedReasonId == null) return null;
     return reasonConfigs[selectedReasonId];
@@ -71,7 +75,7 @@ class PaymentDetailsViewModel extends ChangeNotifier {
     if (cfg == null) return null;
 
     final name = cfg.reasonName.toLowerCase();
-    
+
     // Check if it's Gift or Family Maintenance as per request
     final isGiftOrFM = name.contains('gift') || name.contains('family maintenance');
     if (!isGiftOrFM) return null;
@@ -89,19 +93,19 @@ class PaymentDetailsViewModel extends ChangeNotifier {
     if (enteredName.isNotEmpty && enteredDob.isNotEmpty) {
       debugPrint('--- Self Remittance Check ---');
       debugPrint('Entered Name (Normalized): $enteredName');
-      
+
       final normalizedStoredName = storedUserName?.toLowerCase().trim().replaceAll(RegExp(r'\s+'), ' ');
       debugPrint('Stored Name (Normalized): $normalizedStoredName');
       debugPrint('Entered DOB: $enteredDob');
       debugPrint('Stored DOB: $storedUserDob');
 
       final matchesStoredName = normalizedStoredName != null && enteredName == normalizedStoredName;
-      
+
       bool matchesStoredDob = false;
       if (storedUserDob != null) {
         final s1 = enteredDob.replaceAll(RegExp(r'\D'), '');
         final s2 = storedUserDob!.replaceAll(RegExp(r'\D'), '');
-        
+
         debugPrint('Normalized Entered DOB: $s1');
         debugPrint('Normalized Stored DOB: $s2');
 
@@ -175,70 +179,207 @@ class PaymentDetailsViewModel extends ChangeNotifier {
     return Colors.orange;
   }
 
+  // ---------------------------------------------------------------------
+  // Country -> required bank field mapping.
+  // Source of truth: country.xlsx, sheet "Account Information".
+  // Swift code is required for EVERY country and is validated separately
+  // (swiftCodeController), so it is intentionally not a key in this map.
+  //
+  //  Row  Country                Required fields (Account Info sheet)
+  //  ---  ---------------------  -----------------------------------------
+  //   2   Canada                 Account Number, Transit number
+  //   3   USA                    Account Number, Routing number
+  //   4   UK                     Account Number, IBAN, Sort Code
+  //   5   Australia              Account Number, BSB code
+  //   6   New Zealand            Account Number
+  //   7   European Countries     IBAN only (no Account Number)
+  //   8   Gulf Countries         Account Number, IBAN
+  //   9   Hongkong               Account Number
+  //  10   Japan                  Account Number
+  //  11   Norway                 Account Number
+  //  12   UAE                    IBAN only (no Account Number)
+  //  13   Sweden                 Account Number
+  //  14   Singapore              Account Number
+  //  15   South Africa           Account Number + optional Corresponding Bank
+  //  16   Thailand               Account Number
+  //  17   China                  Account Number
+  //  18   Saudi Arbia            IBAN only (no Account Number)
+  //  20   All other countries    Account Number + optional Corresponding Bank
+  // ---------------------------------------------------------------------
   final Map<String, Map<String, String>> countryBankFields = {
+    // Row 2 - Canada (CAD)
+    'canada': {
+      'transit': 'required',
+      'account_number': 'required',
+    },
+
+    // Row 3 - USA (USD)
     'united states': {
       'routing': 'required',
-      'transit': 'hidden',
-      'bsb': 'hidden',
-      'iban': 'hidden',
-      'sort_code': 'hidden',
+      'account_number': 'required',
+    },
+    'united states of america': {
+      'routing': 'required',
+      'account_number': 'required',
+    },
+    'united states america': {
+      'routing': 'required',
+      'account_number': 'required',
     },
     'usa': {
       'routing': 'required',
-      'transit': 'hidden',
-      'bsb': 'hidden',
-      'iban': 'hidden',
-      'sort_code': 'hidden',
+      'account_number': 'required',
     },
-    'canada': {
-      'routing': 'hidden',
-      'transit': 'required',
-      'bsb': 'hidden',
-      'iban': 'hidden',
-      'sort_code': 'hidden',
+    'u.s.a.': {
+      'routing': 'required',
+      'account_number': 'required',
     },
-    'australia': {
-      'routing': 'hidden',
-      'transit': 'hidden',
-      'bsb': 'required',
-      'iban': 'hidden',
-      'sort_code': 'hidden',
+    'u.s.': {
+      'routing': 'required',
+      'account_number': 'required',
     },
+
+    // Row 4 - UK (GBP)
     'united kingdom': {
-      'routing': 'hidden',
-      'transit': 'hidden',
-      'bsb': 'hidden',
-      'iban': 'optional',
+      'iban': 'required',
       'sort_code': 'required',
+      'account_number': 'required',
     },
     'uk': {
-      'routing': 'hidden',
-      'transit': 'hidden',
-      'bsb': 'hidden',
-      'iban': 'optional',
+      'iban': 'required',
       'sort_code': 'required',
+      'account_number': 'required',
     },
+    'u.k.': {
+      'iban': 'required',
+      'sort_code': 'required',
+      'account_number': 'required',
+    },
+    'great britain': {
+      'iban': 'required',
+      'sort_code': 'required',
+      'account_number': 'required',
+    },
+
+    // Row 5 - Australia (AUD)
+    'australia': {
+      'bsb': 'required',
+      'account_number': 'required',
+    },
+
+    // Row 6 - New Zealand (NZD)
     'new zealand': {
-      'routing': 'hidden',
-      'transit': 'hidden',
-      'bsb': 'optional',
-      'iban': 'hidden',
-      'sort_code': 'hidden',
+      'account_number': 'required',
     },
+
+    // Row 8 - Gulf Countries (USD): Qatar, Kuwait, Oman, Bahrain
+    // (UAE and Saudi Arbia have their own dedicated rows - see below -
+    // and are excluded from this "Gulf Countries" bucket.)
+    'qatar': {
+      'iban': 'required',
+      'account_number': 'required',
+    },
+    'kuwait': {
+      'iban': 'required',
+      'account_number': 'required',
+    },
+    'oman': {
+      'iban': 'required',
+      'account_number': 'required',
+    },
+    'bahrain': {
+      'iban': 'required',
+      'account_number': 'required',
+    },
+
+    // Row 12 - UAE (AED): Swift + IBAN only, no Account Number
+    'united arab emirates': {
+      'iban': 'required',
+      'account_number': 'hidden',
+    },
+    'uae': {
+      'iban': 'required',
+      'account_number': 'hidden',
+    },
+    'u.a.e.': {
+      'iban': 'required',
+      'account_number': 'hidden',
+    },
+
+    // Row 18 - Saudi Arbia (SAR): Swift + IBAN only, no Account Number
+    'saudi arabia': {
+      'iban': 'required',
+      'account_number': 'hidden',
+    },
+    'saudi arbia': {
+      // kept to match the exact (misspelled) value used in the source sheet
+      'iban': 'required',
+      'account_number': 'hidden',
+    },
+    'ksa': {
+      'iban': 'required',
+      'account_number': 'hidden',
+    },
+
+    // Row 9 - Hongkong (HKD)
+    'hong kong': {
+      'account_number': 'required',
+    },
+    'hongkong': {
+      'account_number': 'required',
+    },
+
+    // Row 10 - Japan (JPY)
+    'japan': {
+      'account_number': 'required',
+    },
+
+    // Row 11 - Norway (NOK)
+    'norway': {
+      'account_number': 'required',
+    },
+
+    // Row 13 - Sweden (SEK)
+    'sweden': {
+      'account_number': 'required',
+    },
+
+    // Row 14 - Singapore (SGD)
     'singapore': {
-      'routing': 'hidden',
-      'transit': 'hidden',
-      'bsb': 'hidden',
-      'iban': 'hidden',
-      'sort_code': 'hidden',
+      'account_number': 'required',
+    },
+
+    // Row 16 - Thailand (THB)
+    'thailand': {
+      'account_number': 'required',
+    },
+
+    // Row 17 - China (CNY)
+    'china': {
+      'account_number': 'required',
+    },
+
+    // Row 15 - South Africa (ZAR): Account + Swift + optional Corresponding Bank
+    'south africa': {
+      'account_number': 'required',
+      'corresponding_bank': 'optional',
     },
   };
+
+  // Row 7 - European Countries (EUR): Swift + IBAN only, no Account Number
+  final List<String> europeanCountriesList = [
+    'austria', 'belgium', 'bulgaria', 'croatia', 'cyprus', 'czech republic',
+    'denmark', 'estonia', 'finland', 'france', 'germany', 'greece', 'hungary',
+    'ireland', 'italy', 'latvia', 'lithuania', 'luxembourg', 'malta',
+    'netherlands', 'poland', 'portugal', 'romania', 'slovakia', 'slovenia',
+    'spain', 'switzerland', 'monaco', 'san marino'
+  ];
 
   Future<void> init() async {
     storedUserName = await UserStorage.getUserFullName();
     storedUserDob = await UserStorage.getUserDob();
     debugPrint('✅ Initialized PaymentDetailsViewModel with Stored User: $storedUserName, DOB: $storedUserDob');
-    
+
     await Future.wait([
       fetchReasons(),
       fetchCountries(),
@@ -416,15 +557,42 @@ class PaymentDetailsViewModel extends ChangeNotifier {
     return null;
   }
 
+  /// Resolves which bank fields apply for a given (lower-cased) country name.
+  /// Falls back gracefully:
+  ///   1. Exact match in [countryBankFields]  (named country / group)
+  ///   2. Match in [europeanCountriesList]    (Row 7 - Europe)
+  ///   3. Default                              (Row 20 - all other countries)
   Map<String, String> resolveCountryBankConfig(String countryNameLower) {
-    return countryBankFields[countryNameLower] ??
-        {
-          'routing': 'hidden',
-          'transit': 'hidden',
-          'bsb': 'hidden',
-          'iban': 'required',
-          'sort_code': 'hidden',
-        };
+    final normalized = countryNameLower.trim().toLowerCase();
+
+    final baseConfig = {
+      'routing': 'hidden',
+      'transit': 'hidden',
+      'bsb': 'hidden',
+      'iban': 'hidden',
+      'sort_code': 'hidden',
+      'account_number': 'hidden',
+      'corresponding_bank': 'hidden',
+    };
+
+    if (countryBankFields.containsKey(normalized)) {
+      return {...baseConfig, ...countryBankFields[normalized]!};
+    }
+
+    // Row 7 - European Countries - Swift code + IBAN only
+    if (europeanCountriesList.contains(normalized)) {
+      return {
+        ...baseConfig,
+        'iban': 'required',
+      };
+    }
+
+    // Row 20 - Default for "all other countries"
+    return {
+      ...baseConfig,
+      'account_number': 'required',
+      'corresponding_bank': 'optional',
+    };
   }
 
   String getFieldVisibility(String fieldKey) {
@@ -485,8 +653,18 @@ class PaymentDetailsViewModel extends ChangeNotifier {
     }
 
     if (beneficiaryBankNameController.text.trim().isEmpty) return false;
-    if (accountNumberController.text.trim().isEmpty) return false;
+
+    // Swift code is required for every country.
     if (swiftCodeController.text.trim().isEmpty) return false;
+
+    // Country-specific fields, driven entirely by countryBankFields /
+    // europeanCountriesList (sourced from country.xlsx).
+    if (isFieldRequired('account_number') && accountNumberController.text.trim().isEmpty) return false;
+    if (isFieldRequired('routing') && routingNumberController.text.trim().isEmpty) return false;
+    if (isFieldRequired('transit') && transitNumberController.text.trim().isEmpty) return false;
+    if (isFieldRequired('bsb') && bsbCodeController.text.trim().isEmpty) return false;
+    if (isFieldRequired('iban') && ibanController.text.trim().isEmpty) return false;
+    if (isFieldRequired('sort_code') && sortCodeController.text.trim().isEmpty) return false;
 
     return true;
   }
@@ -494,7 +672,7 @@ class PaymentDetailsViewModel extends ChangeNotifier {
   // Local self-remittance check instead of API
   bool checkLocalSelfRemittance() {
     if (selectedReasonId == null) return false;
-    
+
     return isSelfRemittanceDisallowed;
   }
 
@@ -547,14 +725,14 @@ class PaymentDetailsViewModel extends ChangeNotifier {
         ukSortCode: sortCodeController.text.trim(),
         files: pickedFiles,
         accountHolder: 'No', // As per requirement: proceed only if No, send 'No' to API
+        correspondingBankName: correspondingBankNameController.text.trim(),
+        correspondingBankSwift: correspondingBankSwiftCodeController.text.trim(),
       );
     } finally {
       isSubmitting = false;
       notifyListeners();
     }
   }
-  
-  
 
   @override
   void dispose() {
@@ -576,6 +754,9 @@ class PaymentDetailsViewModel extends ChangeNotifier {
     bsbCodeController.dispose();
     ibanController.dispose();
     sortCodeController.dispose();
+
+    correspondingBankNameController.dispose();
+    correspondingBankSwiftCodeController.dispose();
 
     super.dispose();
   }

@@ -57,6 +57,8 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
   final _bsbFocus = FocusNode();
   final _ibanFocus = FocusNode();
   final _sortCodeFocus = FocusNode();
+  final _correspondingBankNameFocus = FocusNode();
+  final _correspondingBankSwiftFocus = FocusNode();
 
   final _countryFocus = FocusNode();
   final _relationshipFocus = FocusNode();
@@ -95,6 +97,8 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
       vm.emailController,
       vm.mobileController,
       vm.accountNumberController,
+      vm.correspondingBankNameController,
+      vm.correspondingBankSwiftCodeController,
     ]) {
       controller.addListener(_refreshUi);
     }
@@ -136,6 +140,8 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
       vm.emailController,
       vm.mobileController,
       vm.accountNumberController,
+      vm.correspondingBankNameController,
+      vm.correspondingBankSwiftCodeController,
     ]) {
       controller.removeListener(_refreshUi);
     }
@@ -157,6 +163,8 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
       _bsbFocus,
       _ibanFocus,
       _sortCodeFocus,
+      _correspondingBankNameFocus,
+      _correspondingBankSwiftFocus,
       _countryFocus,
       _relationshipFocus,
       _bankNameFocus,
@@ -698,22 +706,23 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
 
                           const SizedBox(height: 16),
 
-                          AppTextField(
-                            controller: vm.accountNumberController,
-                            labelText: 'Account Number',
-                            isRequired: true,
-                            enabled: !isAllDisabled,
-                            focusNode: _accountNumberFocus,
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
-                            ],
-                            onFieldSubmitted: (_) {
-                              FocusScope.of(context)
-                                  .requestFocus(_swiftCodeFocus);
-                            },
-                          ),
-
-                          const SizedBox(height: 16),
+                          if (vm.isFieldVisible('account_number')) ...[
+                            AppTextField(
+                              controller: vm.accountNumberController,
+                              labelText: 'Account Number',
+                              isRequired: vm.isFieldRequired('account_number'),
+                              enabled: !isAllDisabled,
+                              focusNode: _accountNumberFocus,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                              ],
+                              onFieldSubmitted: (_) {
+                                FocusScope.of(context)
+                                    .requestFocus(_swiftCodeFocus);
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                          ],
 
                           AppTextField(
                             controller: vm.swiftCodeController,
@@ -800,6 +809,45 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
                               enabled: !isAllDisabled,
                               focusNode: _sortCodeFocus,
                               textInputAction: TextInputAction.done,
+                              onFieldSubmitted: (_) {
+                                FocusScope.of(context).unfocus();
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+
+                          if (vm.isFieldVisible('corresponding_bank')) ...[
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Corresponding Bank Details (If applicable)',
+                              style: TextStyle(
+                                fontFamily: 'Satoshi',
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: AppTheme.PrimaryColor,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            AppTextField(
+                              controller: vm.correspondingBankNameController,
+                              labelText: 'Corresponding Bank Name',
+                              isRequired: false,
+                              enabled: !isAllDisabled,
+                              focusNode: _correspondingBankNameFocus,
+                              textInputAction: TextInputAction.next,
+                              onFieldSubmitted: (_) {
+                                FocusScope.of(context)
+                                    .requestFocus(_correspondingBankSwiftFocus);
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            AppTextField(
+                              controller: vm.correspondingBankSwiftCodeController,
+                              labelText: 'Corresponding Bank Swift Code',
+                              isRequired: false,
+                              enabled: !isAllDisabled,
+                              textCapitalization: TextCapitalization.characters,
+                              focusNode: _correspondingBankSwiftFocus,
                               onFieldSubmitted: (_) {
                                 FocusScope.of(context).unfocus();
                               },
@@ -979,7 +1027,7 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
       return false;
     }
 
-    if (vm.accountNumberController.text.trim().isEmpty) {
+    if (vm.isFieldRequired('account_number') && vm.accountNumberController.text.trim().isEmpty) {
       FocusScope.of(context).requestFocus(_accountNumberFocus);
       return false;
     }

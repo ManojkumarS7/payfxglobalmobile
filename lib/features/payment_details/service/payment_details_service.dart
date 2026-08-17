@@ -56,6 +56,8 @@ class PaymentDetailsService {
     required String ukSortCode,
     required String accountHolder,
     required Map<String, PlatformFile?> files,
+    String? correspondingBankName,
+    String? correspondingBankSwift,
   }) {
     return ApiService.createTransaction(
       customerId: customerId,
@@ -84,6 +86,8 @@ class PaymentDetailsService {
       accountHolder: accountHolder,
       ukSortCode: ukSortCode,
       files: files,
+      correspondingBankName: correspondingBankName,
+      correspondingBankSwift: correspondingBankSwift,
     );
   }
 }
