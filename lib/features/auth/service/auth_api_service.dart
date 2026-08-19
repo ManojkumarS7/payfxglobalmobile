@@ -192,6 +192,7 @@ class AuthApiService {
     required String mobile,
      required int stateId,
      required int resident180Days,
+     required String gender,
   }) async {
     final headers = await authHeaders();
     final response = await http.post(
@@ -214,6 +215,7 @@ class AuthApiService {
         'country_code': 'IN',
         'payment_option': 'BANK',
         'resident_180_days': resident180Days,
+        'gender': gender
       }),
     );
     return jsonDecode(response.body);

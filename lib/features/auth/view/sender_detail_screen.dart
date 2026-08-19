@@ -143,6 +143,8 @@ class _SenderDetailsScreenState extends State<SenderDetailsScreen> {
                         const SizedBox(height: 16),
                         _buildPhoneField(),
                         const SizedBox(height: 24),
+                        _buildGender(),
+                        const SizedBox(height: 24),
                         _buildResidencyQuestion(),
                         const SizedBox(height: 40),
                         AppPrimaryButton(title: 'Continue',
@@ -198,6 +200,57 @@ class _SenderDetailsScreenState extends State<SenderDetailsScreen> {
               },
             ),
             const Text('No', style: TextStyle(fontFamily: 'Satoshi')),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGender() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Select your gender *',
+          style: TextStyle(
+            fontFamily: 'Satoshi',
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            Radio<String>(
+              value: 'Male',
+              groupValue: vm.gender,
+              activeColor: AppTheme.PrimaryColor,
+              onChanged: (value) => vm.updateGender(value),
+            ),
+            const Text('Male', style: TextStyle(fontFamily: 'Satoshi')),
+            const SizedBox(width: 32),
+            Radio<String>(
+              value: 'Female',
+              groupValue: vm.gender,
+              activeColor: AppTheme.PrimaryColor,
+              onChanged: (value) {
+                vm.updateGender(value);
+                _showResidencyAlert();
+              },
+            ),
+            const Text('Female', style: TextStyle(fontFamily: 'Satoshi')),
+            const SizedBox(width: 32),
+            Radio<String>(
+              value: 'Others',
+              groupValue: vm.gender,
+              activeColor: AppTheme.PrimaryColor,
+              onChanged: (value) {
+                vm.updateGender(value);
+                _showResidencyAlert();
+              },
+            ),
+            const Text('Others', style: TextStyle(fontFamily: 'Satoshi')),
           ],
         ),
       ],

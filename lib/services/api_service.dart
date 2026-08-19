@@ -353,6 +353,7 @@ class ApiService {
     required String postal,
     required String mobile,
     required int stateId,
+    required String gender
   }) async {
     final headers = await authHeaders();
     final response = await http.post(
@@ -373,6 +374,7 @@ class ApiService {
         'mobile': mobile,
         'country': 79,
         'country_code': 'IN',
+        'gender': gender,
         'payment_option': 'BANK',
       }),
     );

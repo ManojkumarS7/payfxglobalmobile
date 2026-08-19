@@ -24,6 +24,7 @@ class SenderDetailsViewModel extends ChangeNotifier {
 
   // New field for residency status: 1 for Yes, 0 for No, null for unselected
   int? resided180Days = 1;
+  String? gender;
 
   bool isButtonEnabled = false;
   bool isLoading = false;
@@ -117,6 +118,12 @@ class SenderDetailsViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateGender(String? value) {
+    gender = value;
+    validateForm();
+    notifyListeners();
+  }
+
   void updatePhoneNumber(String completeNumber) {
     fullPhoneNumber = completeNumber;
     validateForm();
@@ -166,6 +173,7 @@ class SenderDetailsViewModel extends ChangeNotifier {
         mobile: fullPhoneNumber.isNotEmpty ? fullPhoneNumber : mobileController.text.trim(),
         stateId: selectedStateId!,
         resident180Days: resided180Days!,
+        gender: gender!,
       );
 
       isLoading = false;
