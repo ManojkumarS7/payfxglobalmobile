@@ -15,17 +15,48 @@ class ApiService {
   static String? _cachedApiKey;
 
   /// Store API token securely in SecureStorage and cache it globally
+  // static Future<void> setApiKey(String key) async {
+  //   _cachedApiKey = key;
+  //   await _secureStorage.write(key: 'api_key', value: key);
+  //   debugPrint('✅ API Key stored: $key');
+  //   debugPrint('✅ API Key stored securely and cached globally');
+  // }
+
   static Future<void> setApiKey(String key) async {
     _cachedApiKey = key;
-    await _secureStorage.write(key: 'api_key', value: key);
-    debugPrint('✅ API Key stored: $key');
+    await _secureStorage.write(
+      key: 'api_key',
+      value: key,
+    );
+
     debugPrint('✅ API Key stored securely and cached globally');
   }
 
   /// Retrieve API token from secure storage (with in-memory caching)
+  // static Future<String?> getApiKey() async {
+  //   if (_cachedApiKey != null) return _cachedApiKey;
+  //   _cachedApiKey = await _secureStorage.read(key: 'api_key');
+  //   return _cachedApiKey;
+  // }
+
   static Future<String?> getApiKey() async {
     if (_cachedApiKey != null) return _cachedApiKey;
-    _cachedApiKey = await _secureStorage.read(key: 'api_key');
+
+    try {
+      _cachedApiKey = await _secureStorage.read(key: 'api_key');
+    } catch (e, stackTrace) {
+      debugPrint('❌ Failed to read API key: $e');
+      debugPrint('$stackTrace');
+
+      try {
+        await _secureStorage.deleteAll();
+      } catch (deleteError) {
+        debugPrint('❌ Failed to clear secure storage: $deleteError');
+      }
+
+      _cachedApiKey = null;
+    }
+
     return _cachedApiKey;
   }
 
@@ -36,13 +67,35 @@ class ApiService {
   }
 
   /// 🌍 Initialize API key from secure storage on app startup
+  // static Future<void> initializeApiKey() async {
+  //   if (_cachedApiKey == null) {
+  //     _cachedApiKey = await _secureStorage.read(key: 'api_key');
+  //     debugPrint('✅ API Key initialized globally from secure storage: $_cachedApiKey');
+  //   }
+  // }
+
   static Future<void> initializeApiKey() async {
-    if (_cachedApiKey == null) {
+    if (_cachedApiKey != null) return;
+
+    try {
       _cachedApiKey = await _secureStorage.read(key: 'api_key');
-      debugPrint('✅ API Key initialized globally from secure storage: $_cachedApiKey');
+
+      debugPrint('✅ API Key initialized from secure storage');
+    } catch (e, stackTrace) {
+      debugPrint('❌ Failed to read API key from secure storage: $e');
+      debugPrint('$stackTrace');
+
+      // Secure storage may be corrupted/unreadable on some devices.
+      try {
+        await _secureStorage.delete(key: 'api_key');
+        debugPrint('🗑️ Invalid API key removed from secure storage');
+      } catch (deleteError) {
+        debugPrint('❌ Failed to delete invalid API key: $deleteError');
+      }
+
+      _cachedApiKey = null;
     }
   }
-
   /// Clear API token from secure storage
   static Future<void> logout() async {
     _cachedApiKey = null;
@@ -101,6 +154,7 @@ class ApiService {
       throw Exception('HTTP ${res.statusCode}');
     }
   }
+
 
   static Future<Map<String, dynamic>> createCashfreeOrder({
     required int amount,

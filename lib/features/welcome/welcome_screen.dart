@@ -55,7 +55,7 @@ class WelcomeScreen extends StatelessWidget {
                               letterSpacing: 0.3,
                             ),
                           ),
-                          SizedBox(height: isSmallScreen ? 50 : 80),
+                          SizedBox(height: isSmallScreen ? 40 : 60),
 
                           Image.asset('assets/images/payfx.png', height: 120),
 
@@ -87,7 +87,7 @@ class WelcomeScreen extends StatelessWidget {
                             },
                           ),
 
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 34),
 
                           /// LOGIN
                           Row(

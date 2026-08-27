@@ -1,0 +1,270 @@
+--------- beginning of main
+08-24 15:34:01.506   806   806 W Finsky  : [2] STU: Failed to get storage stats for package 'com.android.profiling' (1601: Error getting stats: android.content.pm.PackageManager.NameNotFoundException)
+08-24 15:34:01.603   806   806 W Finsky  : [2] STU: Failed to get storage stats for package 'com.google.android.adbd' (1601: Error getting stats: android.content.pm.PackageManager.NameNotFoundException)
+08-24 15:34:01.620   806   806 W Finsky  : [2] STU: Failed to get storage stats for package 'com.android.i18n' (1601: Error getting stats: android.content.pm.PackageManager.NameNotFoundException)
+08-24 15:34:01.633   806   806 W Finsky  : [2] STU: Failed to get storage stats for package 'com.google.android.conscrypt' (1601: Error getting stats: android.content.pm.PackageManager.NameNotFoundException)
+08-24 15:34:01.668   806   806 W Finsky  : [2] STU: Failed to get storage stats for package 'com.google.android.neuralnetworks' (1601: Error getting stats: android.content.pm.PackageManager.NameNotFoundException)
+08-24 15:34:01.672   806   806 W Finsky  : [2] STU: Failed to get storage stats for package 'com.google.android.ipsec' (1601: Error getting stats: android.content.pm.PackageManager.NameNotFoundException)
+08-24 15:34:01.674   806   806 W Finsky  : [2] STU: Failed to get storage stats for package 'com.android.devicelock' (1601: Error getting stats: android.content.pm.PackageManager.NameNotFoundException)
+08-24 15:34:01.682   806   806 W Finsky  : [2] STU: Failed to get storage stats for package 'com.google.android.ondevicepersonalization' (1601: Error getting stats: android.content.pm.PackageManager.NameNotFoundException)
+08-24 15:34:01.686   806   806 W Finsky  : [2] STU: Failed to get storage stats for package 'com.google.android.healthfitness' (1601: Error getting stats: android.content.pm.PackageManager.NameNotFoundException)
+08-24 15:34:01.718   806   806 W Finsky  : [2] STU: Failed to get storage stats for package 'com.google.android.extservices' (1601: Error getting stats: android.content.pm.PackageManager.NameNotFoundException)
+08-24 15:34:01.745   806   806 W Finsky  : [2] STU: Failed to get storage stats for package 'com.google.android.os.statsd' (1601: Error getting stats: android.content.pm.PackageManager.NameNotFoundException)
+08-24 15:34:01.780   806   806 W Finsky  : [2] STU: Failed to get storage stats for package 'com.google.android.scheduling' (1601: Error getting stats: android.content.pm.PackageManager.NameNotFoundException)
+08-24 15:34:01.806   806   806 I Finsky  : [2] App states replicator found 48 unowned apps
+08-24 15:34:02.941   806  5629 I Finsky  : [867] Completed 1 account content syncs with 1 successful.
+08-24 15:34:02.943   806   806 I Finsky  : [2] [ContentSync] Installation state replication succeeded.
+08-24 15:34:02.943   806   806 I Finsky  : [2] SCH: jobFinished: 12-1. TimeElapsed: 2912ms.
+08-24 15:34:02.944   806   806 I Finsky  : [2] WM::SCH: Logging work end for 12-1
+08-24 15:34:02.955   806   844 I Finsky  : [694] SCH: Scheduling phonesky job Id: 1-1337, CT: 1787559000241, Constraints: [{ L: 43194684, D: 86394684, C: CHARGING_NONE, I: IDLE_NONE, N: NET_ANY, B: BATTERY_ANY }]
+08-24 15:34:02.955   806   844 I Finsky  : [694] SCH: Scheduling phonesky job Id: 34-3621, CT: 1787523281763, Constraints: [{ L: 604800000, D: 2483936305, C: CHARGING_NONE, I: IDLE_NONE, N: NET_ANY, B: BATTERY_ANY }]
+08-24 15:34:02.956   806   844 I Finsky  : [694] SCH: Scheduling phonesky job Id: 34-3625, CT: 1787523281767, Constraints: [{ L: 604800000, D: 2563139964, C: CHARGING_NONE, I: IDLE_NONE, N: NET_ANY, B: BATTERY_ANY }]
+08-24 15:34:02.956   806   844 I Finsky  : [694] SCH: Scheduling phonesky job Id: 34-3628, CT: 1787523281770, Constraints: [{ L: 50339431, D: 1346339431, C: CHARGING_NONE, I: IDLE_NONE, N: NET_ANY, B: BATTERY_ANY }]
+08-24 15:34:02.956   806   844 I Finsky  : [694] SCH: Scheduling phonesky job Id: 62-1031, CT: 1787565825276, Constraints: [{ L: 20000, D: 86400000, C: CHARGING_NONE, I: IDLE_NONE, N: NET_ANY, B: BATTERY_ANY }]
+08-24 15:34:02.960   806   840 I Finsky  : [691] SCH: Scheduling 1 system job(s)
+08-24 15:34:02.961   806   840 I Finsky  : [691] SCH: Scheduling system job Id: 9191, L: 2315, D: 79551964, C: false, I: false, N: 1
+08-24 15:34:02.974   806  4605 I Finsky  : [853] SCH: job service finished with id 9180.
+08-24 15:34:04.057  6571  6571 I adbd    : adbd service requested 'shell:getprop'
+08-24 15:34:12.679 23565 23638 I bt_shim_scanner: system/main/shim/le_scanning_manager.cc:192 ScanFilterParamSetup: in shim layer, clientIf=3
+08-24 15:34:12.681 23565  9440 I bt_shim_scanner: system/main/shim/le_scanning_manager.cc:153 Unregister: in shim layer, scannerId=3
+08-24 15:34:19.030   806   806 I Finsky  : [2] SCH: job service start with id 9191.
+08-24 15:34:19.036   806  4409 I Finsky  : [848] SCH: Satisfied jobs for 9191 are: 62-1031
+08-24 15:34:19.038   806  4605 I Finsky  : [853] SCH: Job 62-1031 starting
+08-24 15:34:19.039   806   806 I Finsky  : [2] WM::SCH: Logging work start for 62-1031
+08-24 15:34:19.039   806   806 I Finsky  : [2] OAR: Triggering open app reminder payload refresh.
+08-24 15:34:19.045   806   829 I Finsky  : [681] OAR: Open app reminder payload refresh job finished.
+08-24 15:34:19.046   806   829 I Finsky  : [681] SCH: jobFinished: 62-1031. TimeElapsed: 8ms.
+08-24 15:34:19.047   806   829 I Finsky  : [681] WM::SCH: Logging work end for 62-1031
+08-24 15:34:19.056   806   844 I Finsky  : [694] SCH: Scheduling phonesky job Id: 1-1337, CT: 1787559000241, Constraints: [{ L: 43194684, D: 86394684, C: CHARGING_NONE, I: IDLE_NONE, N: NET_ANY, B: BATTERY_ANY }]
+08-24 15:34:19.057   806   844 I Finsky  : [694] SCH: Scheduling phonesky job Id: 34-3621, CT: 1787523281763, Constraints: [{ L: 604800000, D: 2483936305, C: CHARGING_NONE, I: IDLE_NONE, N: NET_ANY, B: BATTERY_ANY }]
+08-24 15:34:19.057   806   844 I Finsky  : [694] SCH: Scheduling phonesky job Id: 34-3625, CT: 1787523281767, Constraints: [{ L: 604800000, D: 2563139964, C: CHARGING_NONE, I: IDLE_NONE, N: NET_ANY, B: BATTERY_ANY }]
+08-24 15:34:19.057   806   844 I Finsky  : [694] SCH: Scheduling phonesky job Id: 34-3628, CT: 1787523281770, Constraints: [{ L: 50339431, D: 1346339431, C: CHARGING_NONE, I: IDLE_NONE, N: NET_ANY, B: BATTERY_ANY }]
+08-24 15:34:19.062   806   842 I Finsky  : [693] SCH: Scheduling 1 system job(s)
+08-24 15:34:19.062   806   842 I Finsky  : [693] SCH: Scheduling system job Id: 9196, L: 7762139, D: 79535863, C: false, I: false, N: 1
+08-24 15:34:19.067   806  4605 I Finsky  : [853] SCH: job service finished with id 9191.
+08-24 15:34:19.075  6609  6609 I .greytip.ghress: Using generational CollectorTypeCC GC.
+08-24 15:34:19.085  6609  6609 E .greytip.ghress: BBinder_init Processname  com.greytip.ghress  
+08-24 15:34:19.085  6609  6609 E .greytip.ghress: BBinder_init hasGetProcessName  com.greytip.ghress
+08-24 15:34:19.128  6609  6609 W .greytip.ghress: Failed to find entry 'classes.dex': Entry not found
+08-24 15:34:19.128  6609  6609 W .greytip.ghress: Failed to find entry 'classes.dex': Entry not found
+08-24 15:34:19.129  6609  6609 W .greytip.ghress: Failed to find entry 'classes.dex': Entry not found
+08-24 15:34:19.129  6609  6609 W .greytip.ghress: Failed to find entry 'classes.dex': Entry not found
+08-24 15:34:19.129  6609  6609 W .greytip.ghress: Failed to find entry 'classes.dex': Entry not found
+08-24 15:34:19.130  6609  6609 W .greytip.ghress: Failed to find entry 'classes.dex': Entry not found
+08-24 15:34:19.130  6609  6609 W .greytip.ghress: Failed to find entry 'classes.dex': Entry not found
+08-24 15:34:19.130  6609  6609 W .greytip.ghress: Failed to find entry 'classes.dex': Entry not found
+08-24 15:34:19.130  6609  6609 W .greytip.ghress: Failed to find entry 'classes.dex': Entry not found
+08-24 15:34:19.131  6609  6609 W .greytip.ghress: Failed to find entry 'classes.dex': Entry not found
+08-24 15:34:19.145  6609  6609 I .greytip.ghress: AssetManager2(0xb40000712ffd5df8) locale list changing from [] to [en-US]
+08-24 15:34:19.246  6609  6721 W System  : ClassLoader referenced unknown path: 
+08-24 15:34:19.249  6609  6721 I .greytip.ghress: AssetManager2(0xb40000712ffd8698) locale list changing from [] to [en-US]
+08-24 15:34:19.273  6609  6759 E ashmem  : Pinning is deprecated since Android Q. Please use trim or other methods.
+08-24 15:34:19.273  6609  6721 I .greytip.ghress: AssetManager2(0xb40000712ffd9f98) locale list changing from [] to [en-US]
+08-24 15:34:19.273  6609  6721 I .greytip.ghress: AssetManager2(0xb40000712ffde138) locale list changing from [] to [en-US]
+08-24 15:34:19.284  6609  6609 W FA      : Failed to register event listener on calling thread. Trying again on the dynamite thread.
+08-24 15:34:19.293  6609  6609 W Glide   : Failed to find GeneratedAppGlideModule. You should include an annotationProcessor compile dependency on com.github.bumptech.glide:compiler in your application and a @GlideModule annotated AppGlideModule implementation or LibraryGlideModules will be silently ignored
+08-24 15:34:19.315  6609  6775 E .greytip.ghress: No package ID 6a found for resource ID 0x6a0b0013.
+08-24 15:34:19.315  6609  6775 I FA      : App measurement initialized, version: 178008
+08-24 15:34:19.315  6609  6775 I FA      : To enable debug logging run: adb shell setprop log.tag.FA VERBOSE
+08-24 15:34:19.315  6609  6775 I FA      : To enable faster debug mode event logging run:
+08-24 15:34:19.315  6609  6775 I FA      :   adb shell setprop debug.firebase.analytics.app com.greytip.ghress
+08-24 15:34:19.349  6609  6609 W SoLoader: Initializing SoLoader: 0
+08-24 15:34:19.349  6609  6609 W SoLoader: Recording new base apk path: /data/app/~~UOFMKD4n5XlAwtvWcNzpeQ==/com.greytip.ghress-lvdKfVZDZAfQdvklPpRIMQ==/base.apk
+08-24 15:34:19.349  6609  6609 W SoLoader: Previously recorded 0 base apk paths.
+08-24 15:34:19.351  6609  6609 W BackupSoSource: adding backup source from split: /data/app/~~UOFMKD4n5XlAwtvWcNzpeQ==/com.greytip.ghress-lvdKfVZDZAfQdvklPpRIMQ==/split_config.arm64_v8a.apk
+08-24 15:34:19.354  6609  6609 W SoLoader: SoLoader initialized: 0
+08-24 15:34:19.421  6609  6841 W JobInfo : Requested important-while-foreground flag for job32477 is ignored and takes no effect
+08-24 15:34:19.431  6609  6841 W WM-Processor: Didn't find WorkSpec for id WorkGenerationalId(workSpecId=1953c69f-8698-48d1-806a-5ac7027bef8e, generation=0)
+08-24 15:34:21.273  7162  7162 I yfx.payfxglobal: Using generational CollectorTypeCC GC.
+08-24 15:34:21.282  7162  7162 E yfx.payfxglobal: BBinder_init Processname  com.payfx.payfxglobal  
+08-24 15:34:21.282  7162  7162 E yfx.payfxglobal: BBinder_init hasGetProcessName  com.payfx.payfxglobal
+08-24 15:34:21.308  7162  7162 W yfx.payfxglobal: Failed to find entry 'classes.dex': Entry not found
+08-24 15:34:21.309  7162  7162 W yfx.payfxglobal: Failed to find entry 'classes.dex': Entry not found
+08-24 15:34:21.309  7162  7162 W yfx.payfxglobal: Failed to find entry 'classes.dex': Entry not found
+08-24 15:34:21.309  7162  7162 W yfx.payfxglobal: Failed to find entry 'classes.dex': Entry not found
+08-24 15:34:21.309  7162  7162 W yfx.payfxglobal: Failed to find entry 'classes.dex': Entry not found
+08-24 15:34:21.310  7162  7162 W yfx.payfxglobal: Failed to find entry 'classes.dex': Entry not found
+08-24 15:34:21.310  7162  7162 W yfx.payfxglobal: Failed to find entry 'classes.dex': Entry not found
+08-24 15:34:21.310  7162  7162 W yfx.payfxglobal: Failed to find entry 'classes.dex': Entry not found
+08-24 15:34:21.310  7162  7162 W yfx.payfxglobal: Failed to find entry 'classes.dex': Entry not found
+08-24 15:34:21.310  7162  7162 W yfx.payfxglobal: Failed to find entry 'classes.dex': Entry not found
+08-24 15:34:21.316  7162  7162 I yfx.payfxglobal: AssetManager2(0xb40000712ffd5df8) locale list changing from [] to [en-US]
+08-24 15:34:21.318  7162  7162 W VSPA    : Unable to open /proc/vivo_rsc/frame_set_priority: No such file or directory
+08-24 15:34:21.318  7162  7162 W VSPA    : Unable to open /proc/vivo_rsc/frame_set_priority: No such file or directory
+08-24 15:34:21.400  7162  7162 I FirebaseApp: Device unlocked: initializing all Firebase APIs for app [DEFAULT]
+08-24 15:34:21.404  7162  7162 I FirebaseInitProvider: FirebaseApp initialization successful
+08-24 15:34:21.409  7162  7162 W VSPA    : Unable to open /proc/vivo_rsc/frame_set_priority: No such file or directory
+08-24 15:34:21.424  7162  7162 W VSPA    : Unable to open /proc/vivo_rsc/frame_set_priority: No such file or directory
+08-24 15:34:21.441  7162  7248 E ashmem  : Pinning is deprecated since Android Q. Please use trim or other methods.
+08-24 15:34:21.441  7162  7238 I FirebaseMessaging: App restored, clearing state
+--------- beginning of system
+08-24 15:34:21.448  7162  7251 I DisplayManager: Choreographer implicitly registered for the refresh rate.
+08-24 15:34:21.450  7162  7162 I yfx.payfxglobal: AssetManager2(0xb40000712ffd9f98) locale list changing from [] to [en-US]
+08-24 15:34:21.450  7162  7251 I GameManager: __progname=com.payfx.payfxglobal
+08-24 15:34:21.452  7162  7251 I AdrenoGLES-0: QUALCOMM build                   : bad34dcf83, I1064ae0a1f
+08-24 15:34:21.452  7162  7251 I AdrenoGLES-0: Build Date                       : 11/28/25
+08-24 15:34:21.452  7162  7251 I AdrenoGLES-0: OpenGL ES Shader Compiler Version: E031.41.03.64
+08-24 15:34:21.452  7162  7251 I AdrenoGLES-0: Local Branch                     : 
+08-24 15:34:21.452  7162  7251 I AdrenoGLES-0: Remote Branch                    : refs/tags/AU_LINUX_ANDROID_LA.VENDOR.13.2.0.11.00.00.856.062
+08-24 15:34:21.452  7162  7251 I AdrenoGLES-0: Remote Branch                    : NONE
+08-24 15:34:21.452  7162  7251 I AdrenoGLES-0: Reconstruct Branch               : NOTHING
+08-24 15:34:21.452  7162  7251 I AdrenoGLES-0: Build Config                     : S P 14.1.4 AArch64
+08-24 15:34:21.452  7162  7251 I AdrenoGLES-0: Driver Path                      : /vendor/lib64/egl/libGLESv2_adreno.so
+08-24 15:34:21.452  7162  7251 I AdrenoGLES-0: Driver Version                   : 0676.76.1
+08-24 15:34:21.458  7162  7251 I AdrenoGLES-0: PFP: 0x01200182, ME: 0x00000000
+08-24 15:34:21.478  7162  7162 W VSPA    : Unable to open /proc/vivo_rsc/frame_set_priority: No such file or directory
+08-24 15:34:21.481  7162  7251 I AdrenoUtils: <ReadGpuID:407>: Reading chip ID through GSL
+08-24 15:34:21.483  7162  7251 I libEGL  : skip_priority_level=0, isWorkaroundEnable=1
+08-24 15:34:21.488  7162  7162 W VSPA    : Unable to open /proc/vivo_rsc/frame_set_priority: No such file or directory
+08-24 15:34:21.518  7162  7162 I yfx.payfxglobal: AssetManager2(0xb40000712ffdb578) locale list changing from [] to [en-US]
+08-24 15:34:21.535  7162  7162 W libc    : Access denied finding property "persist.vivo.ltw.enabled"
+08-24 15:34:21.570  7162  7285 I AdrenoVK-0: ===== BEGIN DUMP OF OVERRIDDEN SETTINGS =====
+08-24 15:34:21.570  7162  7285 I AdrenoVK-0: ===== END DUMP OF OVERRIDDEN SETTINGS =====
+08-24 15:34:21.572  7162  7285 I AdrenoVK-0: QUALCOMM build          : bad34dcf83, I1064ae0a1f
+08-24 15:34:21.572  7162  7285 I AdrenoVK-0: Build Date              : 11/28/25
+08-24 15:34:21.572  7162  7285 I AdrenoVK-0: Shader Compiler Version : E031.41.03.64
+08-24 15:34:21.572  7162  7285 I AdrenoVK-0: Local Branch            : 
+08-24 15:34:21.572  7162  7285 I AdrenoVK-0: Remote Branch           : refs/tags/AU_LINUX_ANDROID_LA.VENDOR.13.2.0.11.00.00.856.062
+08-24 15:34:21.572  7162  7285 I AdrenoVK-0: Remote Branch           : NONE
+08-24 15:34:21.572  7162  7285 I AdrenoVK-0: Reconstruct Branch      : NOTHING
+08-24 15:34:21.572  7162  7285 I AdrenoVK-0: Build Config            : S P 14.1.4 AArch64
+08-24 15:34:21.572  7162  7285 I AdrenoVK-0: Driver Path             : /vendor/lib64/hw/vulkan.adreno.so
+08-24 15:34:21.572  7162  7285 I AdrenoVK-0: Driver Version          : 0676.76.1
+08-24 15:34:21.572  7162  7285 I AdrenoVK-0: PFP                     : 0x01200182
+08-24 15:34:21.572  7162  7285 I AdrenoVK-0: ME                      : 0x00000000
+08-24 15:34:21.572  7162  7285 I AdrenoVK-0: Application Name    : Impeller
+08-24 15:34:21.572  7162  7285 I AdrenoVK-0: Application Version : 0x00800000
+08-24 15:34:21.572  7162  7285 I AdrenoVK-0: Engine Name         : Impeller
+08-24 15:34:21.572  7162  7285 I AdrenoVK-0: Engine Version      : 0x00400000
+08-24 15:34:21.572  7162  7285 I AdrenoVK-0: Api Version         : 0x00401000
+08-24 15:34:21.573  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3b9ff250 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.573  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3ba17508 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.573  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3b9ff250 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.573  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3ba17508 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.573  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3b9ff250 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.573  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3ba17508 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.573  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3b9ff250 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.573  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3ba17508 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.573  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3b9ff250 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.573  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3ba17508 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.573  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3b9ff250 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.573  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3ba17508 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.573  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3b9ff250 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.573  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3ba17508 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.573  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3b9ff250 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.573  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3ba17508 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.573  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3b9ff250 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.573  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3ba17508 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.573  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3b9ff250 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.573  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3ba17508 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.573  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3b9ff250 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.573  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3ba17508 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.573  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3b9ff250 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.573  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3ba17508 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.574  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3b9ff250 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.574  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3ba17508 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.574  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3b9ff250 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.574  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3ba17508 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.574  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3b9ff250 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.574  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3ba17508 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.574  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3b9ff250 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.574  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3ba17508 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.575  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3b9ff250 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.575  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3ba17508 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.575  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3b9ff250 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.575  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3ba17508 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.575  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3b9ff250 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.575  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3ba17508 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.575  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3b9ff250 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.575  7162  7285 I AdrenoVK-0: Unknown struct with type 0x3ba17508 provided to vkGetPhysicalDeviceFeatures2
+08-24 15:34:21.577  7162  7285 I flutter : [IMPORTANT:flutter/shell/platform/android/android_context_vk_impeller.cc(62)] Using the Impeller rendering backend (Vulkan).
+08-24 15:34:21.711  7162  7162 W VSPA    : Unable to open /proc/vivo_rsc/frame_set_priority: No such file or directory
+08-24 15:34:21.711  7162  7162 W VSPA    : Unable to open /proc/vivo_rsc/frame_set_priority: No such file or directory
+08-24 15:34:21.756  7162  7162 I WindowExtensionsImpl: Initializing Window Extensions, vendor API level=9, activity embedding enabled=true
+08-24 15:34:21.777  7162  7162 W libc    : Access denied finding property "vendor.display.enable_optimal_refresh_rate"
+08-24 15:34:21.778  7162  7162 W libc    : Access denied finding property "vendor.display.enable_optimal_refresh_rate"
+08-24 15:34:21.782  7162  7162 W libc    : Access denied finding property "vendor.display.enable_optimal_refresh_rate"
+08-24 15:34:21.788  7162  7162 W libc    : Access denied finding property "vendor.display.enable_optimal_refresh_rate"
+08-24 15:34:21.789  7162  7285 E qdgralloc: GetSize: Unrecognized pixel format: 0x3b
+08-24 15:34:21.789  7162  7285 W qdgralloc: gralloc failed to allocate buffer for size 0 format 59 AWxAH 1x1 usage 2816
+08-24 15:34:21.789  7162  7285 E Gralloc4: isSupported(1, 1, 59, 1, ...) failed with 7
+08-24 15:34:21.790  7162  7285 E GraphicBufferAllocator: Failed to allocate (4 x 4) layerCount 1 format 59 usage b00: 7
+08-24 15:34:21.790  7162  7285 E AHardwareBuffer: GraphicBuffer(w=4, h=4, lc=1) failed (Unknown error -7), handle=0x0
+08-24 15:34:21.790  7162  7285 E qdgralloc: GetSize: Unrecognized pixel format: 0x3b
+08-24 15:34:21.790  7162  7285 W qdgralloc: gralloc failed to allocate buffer for size 0 format 59 AWxAH 1x1 usage 2816
+08-24 15:34:21.790  7162  7285 E Gralloc4: isSupported(1, 1, 59, 1, ...) failed with 7
+08-24 15:34:21.790  7162  7285 E GraphicBufferAllocator: Failed to allocate (4 x 4) layerCount 1 format 59 usage b00: 7
+08-24 15:34:21.790  7162  7285 E AHardwareBuffer: GraphicBuffer(w=4, h=4, lc=1) failed (Unknown error -7), handle=0x0
+08-24 15:34:21.791  7162  7285 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-24 15:34:21.795  7162  7285 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-24 15:34:21.796  7162  7285 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-24 15:34:21.796  7162  7285 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-24 15:34:21.797  7162  7285 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-24 15:34:21.797  7162  7285 W qdgralloc: getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+08-24 15:34:21.852  7162  7332 I yfx.payfxglobal: AssetManager2(0xb40000712ffebbf8) locale list changing from [] to [en]
+08-24 15:34:22.247  4791  4819 I Finsky:quick_launch: [679] Stats for Executor: bgExecutor xrb@d0776aa[Running, pool size = 4, active threads = 0, queued tasks = 0, completed tasks = 4]
+08-24 15:34:22.277  4791  4819 I Finsky:quick_launch: [679] Stats for Executor: LightweightExecutor xrb@a24d46f[Running, pool size = 4, active threads = 0, queued tasks = 0, completed tasks = 4]
+08-24 15:34:23.055  7162  7332 I yfx.payfxglobal: AssetManager2(0xb40000712ffefa78) locale list changing from [] to [en-US]
+08-24 15:34:23.112  7162  7332 E StorageCipher18Impl: unwrap key failed
+08-24 15:34:23.112  7162  7332 E StorageCipher18Impl: java.security.InvalidKeyException: Failed to unwrap key
+08-24 15:34:23.112  7162  7332 E StorageCipher18Impl: 	at android.security.keystore2.AndroidKeyStoreCipherSpiBase.engineUnwrap(AndroidKeyStoreCipherSpiBase.java:814)
+08-24 15:34:23.112  7162  7332 E StorageCipher18Impl: 	at javax.crypto.Cipher.unwrap(Cipher.java:2459)
+08-24 15:34:23.112  7162  7332 E StorageCipher18Impl: 	at com.it_nomads.fluttersecurestorage.ciphers.RSACipher18Implementation.unwrap(RSACipher18Implementation.java:58)
+08-24 15:34:23.112  7162  7332 E StorageCipher18Impl: 	at com.it_nomads.fluttersecurestorage.ciphers.StorageCipher18Implementation.<init>(StorageCipher18Implementation.java:39)
+08-24 15:34:23.112  7162  7332 E StorageCipher18Impl: 	at com.it_nomads.fluttersecurestorage.ciphers.StorageCipherAlgorithm$$ExternalSyntheticLambda0.apply(D8$$SyntheticClass:0)
+08-24 15:34:23.112  7162  7332 E StorageCipher18Impl: 	at com.it_nomads.fluttersecurestorage.ciphers.StorageCipherFactory.getCurrentStorageCipher(StorageCipherFactory.java:83)
+08-24 15:34:23.112  7162  7332 E StorageCipher18Impl: 	at com.it_nomads.fluttersecurestorage.FlutterSecureStorage.initStorageCipher(FlutterSecureStorage.java:189)
+08-24 15:34:23.112  7162  7332 E StorageCipher18Impl: 	at com.it_nomads.fluttersecurestorage.FlutterSecureStorage.ensureInitialized(FlutterSecureStorage.java:162)
+08-24 15:34:23.112  7162  7332 E StorageCipher18Impl: 	at com.it_nomads.fluttersecurestorage.FlutterSecureStorage.containsKey(FlutterSecureStorage.java:64)
+08-24 15:34:23.112  7162  7332 E StorageCipher18Impl: 	at com.it_nomads.fluttersecurestorage.FlutterSecureStoragePlugin$MethodRunner.run(FlutterSecureStoragePlugin.java:147)
+08-24 15:34:23.112  7162  7332 E StorageCipher18Impl: 	at android.os.Handler.handleCallback(Handler.java:1051)
+08-24 15:34:23.112  7162  7332 E StorageCipher18Impl: 	at android.os.Handler.dispatchMessage(Handler.java:107)
+08-24 15:34:23.112  7162  7332 E StorageCipher18Impl: 	at android.os.Looper.loopOnce(Looper.java:266)
+08-24 15:34:23.112  7162  7332 E StorageCipher18Impl: 	at android.os.Looper.loop(Looper.java:361)
+08-24 15:34:23.112  7162  7332 E StorageCipher18Impl: 	at android.os.HandlerThread.run(HandlerThread.java:103)
+08-24 15:34:23.112  7162  7332 E StorageCipher18Impl: Caused by: javax.crypto.IllegalBlockSizeException
+08-24 15:34:23.112  7162  7332 E StorageCipher18Impl: 	at android.security.keystore2.AndroidKeyStoreCipherSpiBase.engineDoFinal(AndroidKeyStoreCipherSpiBase.java:634)
+08-24 15:34:23.112  7162  7332 E StorageCipher18Impl: 	at android.security.keystore2.AndroidKeyStoreCipherSpiBase.engineUnwrap(AndroidKeyStoreCipherSpiBase.java:812)
+08-24 15:34:23.112  7162  7332 E StorageCipher18Impl: 	... 14 more
+08-24 15:34:23.112  7162  7332 E StorageCipher18Impl: Caused by: android.security.KeyStoreException: Unknown error (internal Keystore code: -1000 message: system/security/keystore2/src/operation.rs:889: KeystoreOperation::finish
+08-24 15:34:23.112  7162  7332 E StorageCipher18Impl: 
+08-24 15:34:23.112  7162  7332 E StorageCipher18Impl: Caused by:
+08-24 15:34:23.112  7162  7332 E StorageCipher18Impl:     0: system/security/keystore2/src/operation.rs:435: Finish failed for uid 10829
+08-24 15:34:23.112  7162  7332 E StorageCipher18Impl:     1: Error::Km(r#UNKNOWN_ERROR)) (public error code: 10 internal Keystore code: -1000)
+08-24 15:34:23.112  7162  7332 E StorageCipher18Impl: 	at android.security.KeyStore2.getKeyStoreException(KeyStore2.java:428)
+08-24 15:34:23.112  7162  7332 E StorageCipher18Impl: 	at android.security.KeyStoreOperation.handleExceptions(KeyStoreOperation.java:79)
+08-24 15:34:23.112  7162  7332 E StorageCipher18Impl: 	at android.security.KeyStoreOperation.finish(KeyStoreOperation.java:132)
+08-24 15:34:23.112  7162  7332 E StorageCipher18Impl: 	at android.security.keystore2.KeyStoreCryptoOperationChunkedStreamer$MainDataStream.finish(KeyStoreCryptoOperationChunkedStreamer.java:228)
+08-24 15:34:23.112  7162  7332 E StorageCipher18Impl: 	at android.security.keystore2.KeyStoreCryptoOperationChunkedStreamer.doFinal(KeyStoreCryptoOperationChunkedStreamer.java:181)
+08-24 15:34:23.112  7162  7332 E StorageCipher18Impl: 	at android.security.keystore2.AndroidKeyStoreCipherSpiBase.engineDoFinal(AndroidKeyStoreCipherSpiBase.java:624)
+08-24 15:34:23.112  7162  7332 E StorageCipher18Impl: 	... 15 more
+08-24 15:34:23.126  7162  7162 E flutter : [ERROR:flutter/runtime/dart_vm_initializer.cc(40)] Unhandled Exception: PlatformException(Exception encountered, read, javax.crypto.BadPaddingException: error:1e000065:Cipher functions:OPENSSL_internal:BAD_DECRYPT
+08-24 15:34:23.126  7162  7162 E flutter : 	at com.android.org.conscrypt.NativeCrypto.EVP_CipherFinal_ex(Native Method)
+08-24 15:34:23.126  7162  7162 E flutter : 	at com.android.org.conscrypt.OpenSSLEvpCipher.doFinalInternal(OpenSSLEvpCipher.java:152)
+08-24 15:34:23.126  7162  7162 E flutter : 	at com.android.org.conscrypt.OpenSSLEvpCipher.engineDoFinal(OpenSSLEvpCipher.java:190)
+08-24 15:34:23.126  7162  7162 E flutter : 	at javax.crypto.Cipher.doFinal(Cipher.java:2074)
+08-24 15:34:23.126  7162  7162 E flutter : 	at com.it_nomads.fluttersecurestorage.ciphers.StorageCipher18Implementation.decrypt(StorageCipher18Implementation.java:93)
+08-24 15:34:23.126  7162  7162 E flutter : 	at com.it_nomads.fluttersecurestorage.FlutterSecureStorage.decodeRawValue(FlutterSecureStorage.java:262)
+08-24 15:34:23.126  7162  7162 E flutter : 	at com.it_nomads.fluttersecurestorage.FlutterSecureStorage.read(FlutterSecureStorage.java:79)
+08-24 15:34:23.126  7162  7162 E flutter : 	at com.it_nomads.fluttersecurestorage.FlutterSecureStoragePlugin$MethodRunner.run(FlutterSecureStoragePlugin.java:148)
+08-24 15:34:23.126  7162  7162 E flutter : 	at android.os.Handler.handleCallback(Handler.java:1051)
+08-24 15:34:23.126  7162  7162 E flutter : 	at android.os.Handler.dispatchMessage(Handler.java:107)
+08-24 15:34:23.126  7162  7162 E flutter : 	at android.os.Looper.loopOnce(Looper.java:266)
+08-24 15:34:23.126  7162  7162 E flutter : 	at android.os.Looper.loop(Looper.java:361)
+08-24 15:34:23.126  7162  7162 E flutter : 	at android.os.HandlerThread.run(HandlerThread.java:103)
+08-24 15:34:23.126  7162  7162 E flutter : , null)
+08-24 15:34:23.126  7162  7162 E flutter : #0      StandardMethodCodec.decodeEnvelope (package:flutter/src/services/message_codecs.dart:653)
+08-24 15:34:23.126  7162  7162 E flutter : #1      MethodChannel._invokeMethod (package:flutter/src/services/platform_channel.dart:367)
+08-24 15:34:23.126  7162  7162 E flutter : <asynchronous suspension>
+08-24 15:34:23.126  7162  7162 E flutter : #2      ApiService.initializeApiKey (package:payfxglobal/services/api_service.dart:41)
+08-24 15:34:23.126  7162  7162 E flutter : <asynchronous suspension>
+08-24 15:34:23.126  7162  7162 E flutter : #3      main (package:payfxglobal/main.dart:59)
+08-24 15:34:23.126  7162  7162 E flutter : <asynchronous suspension>
+08-24 15:34:27.724   806   816 I IPCThreadState: oneway function results for code 2 on binder at 0xb4000072d0076870 will be dropped but finished with status UNKNOWN_TRANSACTION
+08-24 15:34:27.847  5221  5296 I Process : Sending signal. PID: 5221 SIG: 9
+08-24 15:34:29.611   806  3051 I IPCThreadState: oneway function results for code 2 on binder at 0xb4000072d0076f30 will be dropped but finished with status UNKNOWN_TRANSACTION
+08-24 15:34:31.440  4818  4818 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda13@3a88916
+08-24 15:34:31.443  4818  5787 I HWUI    : [destroy] CanvasContext will be destroyed.
+08-24 15:34:32.438  4818  5787 I HWUI    : [trimMemory] TrimMemory will destroy render context, mode: 40.
+08-24 15:34:33.696  6571  6571 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color:export ANDROID_LOG_TAGS=''; exec logcat '-d''
+08-24 15:34:33.763  3152  6376 D BatteryStatsService: noteStatBrightnessWithHbm displayId=0,nit=265

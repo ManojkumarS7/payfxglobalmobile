@@ -572,27 +572,37 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
                             ),
                           ),
 
+                          // Container(
+                          //   key: _countryKey,
+                          //   child: vm.countriesLoading
+                          //       ? const Center(child: CustomLoadingIndicator())
+                          //       : Focus(
+                          //     focusNode: _countryFocus,
+                          //     child: _buildDropdownField<int>(
+                          //       key: _countryDropdownKey,
+                          //       label: 'Country',
+                          //       enabled: !isAllDisabled,
+                          //       value: vm.selectedCountryId,
+                          //       items: vm.countries.map((country) {
+                          //         return DropdownMenuItem<int>(
+                          //           value: country['id'] as int,
+                          //           child: Text(
+                          //             country['name'] as String? ?? '',
+                          //           ),
+                          //         );
+                          //       }).toList(),
+                          //       onChanged: _onCountrySelected,
+                          //     ),
+                          //   ),
+                          // ),
+
                           Container(
                             key: _countryKey,
                             child: vm.countriesLoading
                                 ? const Center(child: CustomLoadingIndicator())
                                 : Focus(
                               focusNode: _countryFocus,
-                              child: _buildDropdownField<int>(
-                                key: _countryDropdownKey,
-                                label: 'Country',
-                                enabled: !isAllDisabled,
-                                value: vm.selectedCountryId,
-                                items: vm.countries.map((country) {
-                                  return DropdownMenuItem<int>(
-                                    value: country['id'] as int,
-                                    child: Text(
-                                      country['name'] as String? ?? '',
-                                    ),
-                                  );
-                                }).toList(),
-                                onChanged: _onCountrySelected,
-                              ),
+                              child: _buildSearchableCountryField(isAllDisabled),
                             ),
                           ),
 
@@ -885,6 +895,89 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
     );
   }
 
+
+  Widget _buildSearchableCountryField(bool isAllDisabled) {
+    final selectedCountry = vm.countries.firstWhere(
+          (c) => c['id'] == vm.selectedCountryId,
+      orElse: () => {},
+    );
+    final displayName = selectedCountry['name'] as String? ?? '';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Country',
+          style: TextStyle(
+            fontFamily: 'Satoshi',
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 8),
+        InkWell(
+          key: _countryDropdownKey,
+          borderRadius: BorderRadius.circular(12),
+          onTap: isAllDisabled ? null : () => _openCountrySearchSheet(),
+          child: InputDecorator(
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: isAllDisabled ? Colors.grey.shade100 : Colors.white,
+              contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey[300]!),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey[300]!),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppTheme.PrimaryColor),
+              ),
+              suffixIcon: Icon(
+                Icons.arrow_drop_down,
+                color: isAllDisabled ? Colors.grey.shade400 : Colors.black54,
+              ),
+            ),
+            child: Text(
+              displayName.isEmpty ? 'Select Country' : displayName,
+              style: TextStyle(
+                fontFamily: 'Satoshi',
+                fontSize: 16,
+                color: displayName.isEmpty
+                    ? Colors.grey.shade600
+                    : (isAllDisabled ? Colors.grey.shade500 : AppTheme.TextColor),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _openCountrySearchSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return _CountrySearchSheet(
+          countries: vm.countries,
+          onSelected: (country) {
+            Navigator.pop(context);
+            _onCountrySelected(country['id'] as int?);
+          },
+        );
+      },
+    );
+  }
 
   void _scrollToKey(GlobalKey key) {
     final ctx = key.currentContext;
@@ -1615,6 +1708,119 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
           ),
         ),
       ],
+    );
+  }
+}
+class _CountrySearchSheet extends StatefulWidget {
+  final List<Map<String, dynamic>> countries;
+  final ValueChanged<Map<String, dynamic>> onSelected;
+
+  const _CountrySearchSheet({
+    required this.countries,
+    required this.onSelected,
+  });
+
+  @override
+  State<_CountrySearchSheet> createState() => _CountrySearchSheetState();
+}
+
+class _CountrySearchSheetState extends State<_CountrySearchSheet> {
+  final TextEditingController _searchController = TextEditingController();
+  late List<Map<String, dynamic>> _filtered;
+
+  @override
+  void initState() {
+    super.initState();
+    _filtered = widget.countries;
+    _searchController.addListener(_filterCountries);
+  }
+
+  void _filterCountries() {
+    final query = _searchController.text.trim().toLowerCase();
+    setState(() {
+      _filtered = query.isEmpty
+          ? widget.countries
+          : widget.countries.where((c) {
+        final name = (c['name'] as String? ?? '').toLowerCase();
+        return name.contains(query);
+      }).toList();
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: SizedBox(
+        height: MediaQuery.of(context).size.height * 0.75,
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: TextField(
+                controller: _searchController,
+                autofocus: true,
+                style: const TextStyle(fontFamily: 'Satoshi'),
+                decoration: InputDecoration(
+                  hintText: 'Search country',
+                  hintStyle: const TextStyle(fontFamily: 'Satoshi'),
+                  prefixIcon: const Icon(Icons.search),
+                  filled: true,
+                  fillColor: Colors.grey.shade100,
+                  contentPadding:
+                  const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Divider(height: 1),
+            Expanded(
+              child: _filtered.isEmpty
+                  ? const Center(
+                child: Text(
+                  'No countries found',
+                  style: TextStyle(fontFamily: 'Satoshi', color: Colors.grey),
+                ),
+              )
+                  : ListView.separated(
+                itemCount: _filtered.length,
+                separatorBuilder: (_, __) =>
+                    Divider(height: 1, color: Colors.grey.shade200),
+                itemBuilder: (context, index) {
+                  final country = _filtered[index];
+                  return ListTile(
+                    title: Text(
+                      country['name'] as String? ?? '',
+                      style: const TextStyle(fontFamily: 'Satoshi'),
+                    ),
+                    onTap: () => widget.onSelected(country),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

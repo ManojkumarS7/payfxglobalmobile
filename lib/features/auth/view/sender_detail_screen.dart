@@ -236,7 +236,6 @@ class _SenderDetailsScreenState extends State<SenderDetailsScreen> {
               activeColor: AppTheme.PrimaryColor,
               onChanged: (value) {
                 vm.updateGender(value);
-                _showResidencyAlert();
               },
             ),
             const Text('Female', style: TextStyle(fontFamily: 'Satoshi')),
@@ -247,7 +246,6 @@ class _SenderDetailsScreenState extends State<SenderDetailsScreen> {
               activeColor: AppTheme.PrimaryColor,
               onChanged: (value) {
                 vm.updateGender(value);
-                _showResidencyAlert();
               },
             ),
             const Text('Others', style: TextStyle(fontFamily: 'Satoshi')),

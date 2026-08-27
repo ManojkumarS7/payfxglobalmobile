@@ -76,11 +76,9 @@ class _UnlockScreenState extends State<UnlockScreen> with WidgetsBindingObserver
         ),
       );
       debugPrint('Authentication result: $authenticated');
-      // if (authenticated && mounted) {
-      //   await _handleSuccess();
-      // }
-
-      if (!authenticated) {
+      if (authenticated && mounted) {
+        await _handleSuccess();
+      } else if (!authenticated) {
         _failedAttempts++;
 
         if (_failedAttempts >= 5) {

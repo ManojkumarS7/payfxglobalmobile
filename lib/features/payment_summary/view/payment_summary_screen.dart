@@ -3,7 +3,7 @@ import 'package:payfxglobal/utils/app_theme.dart';
 import 'package:payfxglobal/widgets/custom_app_bar.dart';
 import 'package:payfxglobal/widgets/custom_button.dart';
 import 'package:payfxglobal/widgets/custom_loading_indicator.dart';
-
+import 'package:payfxglobal/widgets/ekyc_dialog.dart';
 import '../service/payment_service_api_service.dart';
 import '../view_model/payment_service_view_model.dart';
 
@@ -46,14 +46,20 @@ class _PaymentSummaryScreenState extends State<PaymentSummaryScreen> {
   }
 
   void _handleNext() {
-    final nextArgs = vm.buildNextArgs(
-      oldArgs: argsMap,
-    );
-
-    Navigator.pushReplacementNamed(
+    EKycDialog.show(
       context,
-      '/choose-payment-method',
-      arguments: nextArgs,
+      onContinue: () {
+        Navigator.pop(context); // Close the dialog
+        final nextArgs = vm.buildNextArgs(
+          oldArgs: argsMap,
+        );
+
+        Navigator.pushReplacementNamed(
+          context,
+          '/choose-payment-method',
+          arguments: nextArgs,
+        );
+      },
     );
   }
 
