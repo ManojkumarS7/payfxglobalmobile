@@ -174,6 +174,7 @@ class ChoosePaymentMethodViewModel extends ChangeNotifier {
 
   Future<void> startOnlinePayment({
     required VoidCallback onPaymentPending,
+    required VoidCallback onPaymentCancelled,
     required void Function(String message) onPaymentFailed,
     required void Function(String orderId) onPaymentSuccess,
     required void Function(String message) onVerificationFailed,
@@ -192,12 +193,14 @@ class ChoosePaymentMethodViewModel extends ChangeNotifier {
         throw Exception('Invalid payment amount: $amount');
       }
 
-      final name = responseData?['name'] ?? responseData?['customer_name'] ?? 'User';
+      final name = responseData?['name'] ;
       final phone = responseData?['mobile']?.toString() ??
           responseData?['phone']?.toString() ??
-          '9999999999';
-      final email = responseData?['email'] ?? responseData?['customer_email'] ?? 'test@test.com';
+          '';
+      final email = responseData?['email'] ;
       final transaction = responseData?['transaction_id']?.toString() ?? '123';
+      final apikey = responseData?['api_key'] ;
+
 
       debugPrint('===== CASHFREE REQUEST =====');
       debugPrint('Amount      : ${amount.round()}');
@@ -205,8 +208,10 @@ class ChoosePaymentMethodViewModel extends ChangeNotifier {
       debugPrint('Phone       : $phone');
       debugPrint('Email       : $email');
       debugPrint('Transaction : $transaction');
+      debugPrint('API Key     : $apikey');
       debugPrint('============================');
-      //
+
+
       final response = await apiService.createCashfreeOrder(
         amount: amount.round(),
         name: name,
@@ -230,6 +235,7 @@ class ChoosePaymentMethodViewModel extends ChangeNotifier {
       }
 
       cfPaymentGatewayService.setCallback(
+        // SUCCESS CALLBACK
             (orderId) async {
           try {
             isLoading = true;
@@ -247,24 +253,44 @@ class ChoosePaymentMethodViewModel extends ChangeNotifier {
             } else if (status == 'PENDING') {
               onPaymentPending();
             } else {
-              onPaymentFailed(verifyResponse?['message'] ?? 'Payment verification failed (Status: $status)');
+              onPaymentFailed(
+                verifyResponse?['message'] ??
+                    'Payment verification failed (Status: $status)',
+              );
             }
           } catch (e) {
-            onVerificationFailed('Verification Error: ${e.toString()}');
+            onVerificationFailed(
+              'Verification Error: ${e.toString()}',
+            );
           } finally {
             isLoading = false;
             notifyListeners();
           }
         },
-            (CFErrorResponse errorResponse, String orderId) { // Swapped and types added for clarity
+
+        // ERROR / CANCEL CALLBACK
+            (CFErrorResponse errorResponse, String orderId) {
           isLoading = false;
           notifyListeners();
 
-          final String msg = errorResponse.getMessage() ?? 'Payment failed';
-          final String code = errorResponse.getCode() ?? 'N/A';
-          final String type = errorResponse.getType() ?? 'N/A';
+          final String msg =
+              errorResponse.getMessage() ?? 'Payment cancelled';
 
-          onPaymentFailed("$msg\n(Order: $orderId, Code: $code, Type: $type)");
+          final String code =
+              errorResponse.getCode() ?? 'N/A';
+
+          final String type =
+              errorResponse.getType() ?? 'N/A';
+
+          debugPrint('===== CASHFREE ERROR =====');
+          debugPrint('Message: $msg');
+          debugPrint('Code: $code');
+          debugPrint('Type: $type');
+          debugPrint('Order ID: $orderId');
+          debugPrint('==========================');
+
+          // User cancelled/back pressed
+          onPaymentCancelled();
         },
       );
 

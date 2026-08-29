@@ -158,6 +158,7 @@ String get enteredOtp {
       isLoading = false;
       notifyListeners();
 
+      print(e);
       return 'Something went wrong';
     }
   }

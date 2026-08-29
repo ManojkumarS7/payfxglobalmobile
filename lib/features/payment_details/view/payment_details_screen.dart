@@ -723,9 +723,6 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
                               isRequired: vm.isFieldRequired('account_number'),
                               enabled: !isAllDisabled,
                               focusNode: _accountNumberFocus,
-                              inputFormatters: [
-                                FilteringTextInputFormatter.digitsOnly,
-                              ],
                               onFieldSubmitted: (_) {
                                 FocusScope.of(context)
                                     .requestFocus(_swiftCodeFocus);
@@ -851,6 +848,7 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
                               },
                             ),
                             const SizedBox(height: 16),
+
                             AppTextField(
                               controller: vm.correspondingBankSwiftCodeController,
                               labelText: 'Corresponding Bank Swift Code',

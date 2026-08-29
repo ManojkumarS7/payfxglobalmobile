@@ -53,8 +53,6 @@ class _ChoosePaymentMethodScreenState
     }
   }
 
-
-
   Future<void> _handleNext() async {
     if (vm.selectedMethod == 'offline') {
       try {
@@ -82,7 +80,7 @@ class _ChoosePaymentMethodScreenState
 
         AppSnackbar.show(
           context,
-        'Something went wrog..Check your internet',
+          'Something went wrong.. Check your internet',
           success: false,
         );
       }
@@ -94,6 +92,9 @@ class _ChoosePaymentMethodScreenState
           await vm.saveOnlinePaymentMode();
 
           await vm.startOnlinePayment(
+            // ==========================
+            // PAYMENT SUCCESS
+            // ==========================
             onPaymentSuccess: (orderId) {
               if (!mounted) return;
 
@@ -107,6 +108,10 @@ class _ChoosePaymentMethodScreenState
                 },
               );
             },
+
+            // ==========================
+            // PAYMENT PENDING
+            // ==========================
             onPaymentPending: () {
               if (!mounted) return;
 
@@ -116,22 +121,50 @@ class _ChoosePaymentMethodScreenState
                 success: false,
               );
             },
+
+            // ==========================
+            // PAYMENT FAILED
+            // ==========================
             onPaymentFailed: (message) {
-             if (!mounted) return;
-             AppSnackbar.show(context, 'Payment failed', success: false);
+              if (!mounted) return;
+
+              AppSnackbar.show(
+                context,
+                'Payment failed',
+                success: false,
+              );
             },
+
+            // ==========================
+            // VERIFICATION FAILED
+            // ==========================
             onVerificationFailed: (message) {
               if (!mounted) return;
+
               AppSnackbar.show(
                 context,
                 'Verification failed',
                 success: false,
               );
             },
+
+            // ==========================
+            // USER CANCELLED PAYMENT
+            // ==========================
+            onPaymentCancelled: () {
+              if (!mounted) return;
+
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                '/dashboard',
+                    (route) => false,
+              );
+            },
           );
         } catch (e) {
-          print(e);
+          debugPrint('Payment Error: $e');
+
           if (!mounted) return;
+
           AppSnackbar.show(
             context,
             'Something went wrong',
@@ -141,6 +174,8 @@ class _ChoosePaymentMethodScreenState
       }
     }
   }
+
+
 
 
   Future<bool?> _showOnlineChargesDialog() async {
