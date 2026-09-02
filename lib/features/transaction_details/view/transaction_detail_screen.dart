@@ -114,7 +114,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      vm.detailsError!,
+                      'Something went wrong,please try again later'!,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         fontFamily: 'Satoshi',

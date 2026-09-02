@@ -1,14 +1,12 @@
-
-
 import 'package:flutter/material.dart';
 import 'package:payfxglobal/paystudy/core/constants/app_snackbar.dart';
 import 'package:payfxglobal/utils/app_theme.dart';
 import 'package:payfxglobal/widgets/custom_app_bar.dart';
 import 'package:payfxglobal/widgets/custom_button.dart';
 import 'package:payfxglobal/widgets/custom_loading_indicator.dart';
+import 'package:payfxglobal/widgets/feedback_dialog.dart';
 import '../service/payment_success_service.dart';
 import '../view_model/payment_success_view_model.dart';
-
 
 class PaymentSuccessScreen extends StatefulWidget {
   const PaymentSuccessScreen({
@@ -17,13 +15,12 @@ class PaymentSuccessScreen extends StatefulWidget {
   });
 
   @override
-  State<PaymentSuccessScreen> createState() =>
-      _PaymentSuccessScreenState();
+  State<PaymentSuccessScreen> createState() => _PaymentSuccessScreenState();
 }
 
-class _PaymentSuccessScreenState
-    extends State<PaymentSuccessScreen> {
+class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
   late PaymentSuccessViewModel vm;
+  bool _feedbackShown = false;
 
   @override
   void initState() {
@@ -33,23 +30,45 @@ class _PaymentSuccessScreenState
       apiService: PaymentSuccessApiService(),
     );
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final args = ModalRoute.of(context)?.settings.arguments;
 
       if (args is Map) {
-        vm.fetchDetails(
+        await vm.fetchDetails(
           args: Map<String, dynamic>.from(args),
         );
       } else {
-        vm.fetchDetails(args: {});
+        await vm.fetchDetails(args: {});
+      }
+
+      if (mounted && vm.error == null && !_feedbackShown) {
+        _feedbackShown = true;
+        _showFeedbackDialog();
       }
     });
+  }
+
+  void _showFeedbackDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => FeedbackDialog(
+        onSubmit: (rating, comment) {
+          debugPrint('Feedback Received: Rating: $rating, Comment: $comment');
+          AppSnackbar.show(
+            context,
+            'Thank you for your feedback!',
+            success: true,
+          );
+        },
+      ),
+    );
   }
 
   void _navigateToDashboard() {
     Navigator.of(context).pushNamedAndRemoveUntil(
       '/dashboard',
-          (route) => false,
+      (route) => false,
     );
   }
 
@@ -141,7 +160,6 @@ class _PaymentSuccessScreenState
                   child: Column(
                     children: [
                       const SizedBox(height: 16),
-
                       Container(
                         decoration: const BoxDecoration(
                           shape: BoxShape.circle,
@@ -154,9 +172,7 @@ class _PaymentSuccessScreenState
                           size: 40,
                         ),
                       ),
-
                       const SizedBox(height: 24),
-
                       const Text(
                         'Transaction Submitted',
                         style: TextStyle(
@@ -166,9 +182,7 @@ class _PaymentSuccessScreenState
                           color: AppTheme.TextColor,
                         ),
                       ),
-
                       const SizedBox(height: 8),
-
                       Text(
                         'Submitted on ${vm.datetime}',
                         textAlign: TextAlign.center,
@@ -178,13 +192,9 @@ class _PaymentSuccessScreenState
                           fontSize: 14,
                         ),
                       ),
-
                       const SizedBox(height: 32),
-
                       _buildDetailCard(),
-
                       const SizedBox(height: 24),
-
                       if (vm.isOffline) ...[
                         const SizedBox(height: 20),
                         Container(
@@ -229,14 +239,11 @@ class _PaymentSuccessScreenState
                               : _downloadInstructions,
                         ),
                       ],
-
                       const SizedBox(height: 20),
-
                       AppPrimaryButton(
                         title: 'Go to Dashboard',
                         onPressed: _navigateToDashboard,
                       ),
-
                       const SizedBox(height: 24),
                     ],
                   ),
@@ -268,9 +275,7 @@ class _PaymentSuccessScreenState
             vm.referenceNumber,
             isBold: true,
           ),
-
           const Divider(height: 32),
-
           _rowInfo(
             'Sender',
             vm.sender['name'] ?? '-',
@@ -287,14 +292,10 @@ class _PaymentSuccessScreenState
             'Account Number',
             vm.receiver['account_number'] ?? '-',
           ),
-
           const Divider(height: 32),
-
           _rowInfo(
             'Exchange Rate',
-            vm.exchangeRate > 0
-                ? vm.exchangeRate.toStringAsFixed(4)
-                : '-',
+            vm.exchangeRate > 0 ? vm.exchangeRate.toStringAsFixed(4) : '-',
           ),
           _rowInfo(
             'Service Fee',
@@ -308,15 +309,12 @@ class _PaymentSuccessScreenState
             'TCS',
             '₹${vm.tcsAmount.toStringAsFixed(2)}',
           ),
-
           if (vm.nostroAmount > 0)
             _rowInfo(
               'Nostro Charge',
               '₹${vm.nostroAmount.toStringAsFixed(2)}',
             ),
-
           const Divider(height: 32),
-
           _rowInfo(
             'Send Amount',
             '₹${vm.sendAmount.toStringAsFixed(2)}',
@@ -342,16 +340,15 @@ class _PaymentSuccessScreenState
   }
 
   Widget _rowInfo(
-      String label,
-      String value, {
-        bool isBold = false,
-        bool isHighlight = false,
-      }) {
+    String label,
+    String value, {
+    bool isBold = false,
+    bool isHighlight = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
-        mainAxisAlignment:
-        MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             label,
@@ -365,12 +362,9 @@ class _PaymentSuccessScreenState
             value,
             style: TextStyle(
               fontFamily: 'Satoshi',
-              fontWeight: isBold || isHighlight
-                  ? FontWeight.w700
-                  : FontWeight.w500,
-              color: isHighlight
-                  ? AppTheme.PrimaryColor
-                  : AppTheme.TextColor,
+              fontWeight:
+                  isBold || isHighlight ? FontWeight.w700 : FontWeight.w500,
+              color: isHighlight ? AppTheme.PrimaryColor : AppTheme.TextColor,
               fontSize: isBold ? 15 : 14,
             ),
           ),

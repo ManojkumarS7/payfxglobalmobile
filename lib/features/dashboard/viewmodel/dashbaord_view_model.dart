@@ -137,6 +137,13 @@ class DashboardViewModel extends ChangeNotifier {
       }
     } catch (_) {}
 
+    final directName = customerJson['full_name']?.toString().trim() ??
+        customerJson['name']?.toString().trim() ??
+        customerJson['firstname']?.toString().trim();
+    if (directName != null && directName.isNotEmpty) {
+      return directName;
+    }
+
     final email = customerJson['email']?.toString() ?? '';
 
     if (email.isNotEmpty) {

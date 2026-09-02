@@ -151,6 +151,8 @@ class TransactionDetailViewModel extends ChangeNotifier {
         response['data'] ?? {},
       );
 
+      print(data);
+
       sender = Map<String, dynamic>.from(data['sender'] ?? {});
       receiver = Map<String, dynamic>.from(data['receiver'] ?? {});
       amount = Map<String, dynamic>.from(data['amount'] ?? {});

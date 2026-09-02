@@ -102,6 +102,7 @@ class TransactionHistoryViewModel extends ChangeNotifier {
       transactions = await apiService.fetchTransactions(
         userId: userId,
       );
+
     } catch (e) {
       errorMessage = 'Something went wrong';
     } finally {

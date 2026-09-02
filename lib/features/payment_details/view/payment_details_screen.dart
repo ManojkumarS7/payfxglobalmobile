@@ -1774,6 +1774,7 @@ class _CountrySearchSheetState extends State<_CountrySearchSheet> {
               child: TextField(
                 controller: _searchController,
                 autofocus: true,
+                cursorColor: AppTheme.PrimaryColor,
                 style: const TextStyle(fontFamily: 'Satoshi'),
                 decoration: InputDecoration(
                   hintText: 'Search country',

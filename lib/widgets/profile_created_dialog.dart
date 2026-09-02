@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:payfxglobal/utils/app_theme.dart';
+import 'package:payfxglobal/utils/session_manager.dart';
+import 'package:payfxglobal/utils/user_storage.dart';
 import 'package:payfxglobal/widgets/custom_app_bar.dart';
 import 'package:payfxglobal/widgets/custom_text_field.dart';
 import 'package:payfxglobal/widgets/custom_button.dart';
 
 class ProfileCreatedDialog extends StatelessWidget {
-  const ProfileCreatedDialog({super.key, this.onNext, this.userId});
+  const ProfileCreatedDialog({super.key, this.onNext, this.userId, this.userData});
 
   final VoidCallback? onNext;
   final int? userId;
+  final Map<String, dynamic>? userData;
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +53,7 @@ class ProfileCreatedDialog extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             const Text(
-              'Please login to proceed.',
+              'Your profile is ready. You can now start using PayFX Global.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 15,
@@ -60,12 +63,18 @@ class ProfileCreatedDialog extends StatelessWidget {
             ),
             const SizedBox(height: 28),
             AppPrimaryButton(
-              title: 'Next',
-              onPressed: () {
-                if (onNext != null) {
-                  onNext!();
-                } else {
-                  Navigator.pop(context);
+              title: 'Go to Home',
+              onPressed: () async {
+                final data = (userData != null && userData!.isNotEmpty)
+                    ? userData!
+                    : await UserStorage.getUserData();
+
+                if (context.mounted) {
+                  Navigator.of(context).pushNamedAndRemoveUntil(
+                    '/dashboard',
+                    (Route<dynamic> route) => false,
+                    arguments: {'userData': data},
+                  );
                 }
               },
             )

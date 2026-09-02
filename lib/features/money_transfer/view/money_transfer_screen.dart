@@ -393,114 +393,143 @@ class _MoneyTransferScreenState extends State<MoneyTransferScreen> {
   }
 
   Widget _buildBreakdownCard() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        children: [
-          InkWell(
-            borderRadius: BorderRadius.circular(20),
-            onTap: () {
-              setState(() {
-                _isExpanded = !_isExpanded;
-              });
-            },
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 18,
-              ),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF3DE),
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(20),
-                  topRight: const Radius.circular(20),
-                  bottomLeft:
-                  Radius.circular(_isExpanded ? 0 : 20),
-                  bottomRight:
-                  Radius.circular(_isExpanded ? 0 : 20),
+    final isLoading = vm.isPageLoading;
+
+    return Shimmer(
+      duration: const Duration(seconds: 2),
+      interval: const Duration(seconds: 1),
+      color: Colors.grey,
+      colorOpacity: 0.3,
+      enabled: isLoading,
+      direction: const ShimmerDirection.fromLTRB(),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            // HEADER
+            InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: isLoading
+                  ? null
+                  : () {
+                setState(() {
+                  _isExpanded = !_isExpanded;
+                });
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 18,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF3DE),
+                  borderRadius: BorderRadius.only(
+                    topLeft: const Radius.circular(20),
+                    topRight: const Radius.circular(20),
+                    bottomLeft: Radius.circular(_isExpanded ? 0 : 20),
+                    bottomRight: Radius.circular(_isExpanded ? 0 : 20),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          isLoading
+                              ? _shimmerBox(height: 15, width: 100)
+                              : const Text(
+                            "Total Amount",
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          isLoading
+                              ? _shimmerBox(height: 12, width: 140)
+                              : Text(
+                            "(Inclusive of all charges)",
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    isLoading
+                        ? _shimmerBox(height: 18, width: 60)
+                        : Text(
+                      "₹${vm.senderAmount.toStringAsFixed(2)}",
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+
+                    const SizedBox(width: 8),
+
+                    if (!isLoading)
+                      AnimatedRotation(
+                        turns: _isExpanded ? 0.25 : 0,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                        child: const Icon(Icons.chevron_right),
+                      ),
+                  ],
                 ),
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment:
-                      CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Total Amount",
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          "(Inclusive of all charges)",
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Text(
-                    "₹${vm.senderAmount.toStringAsFixed(2)}",
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  AnimatedRotation(
-                    turns: _isExpanded ? 0.25 : 0,
-                    duration: const Duration(milliseconds: 250),
-                    child: const Icon(Icons.chevron_right),
-                  ),
-                ],
-              ),
             ),
-          ),
 
-          AnimatedCrossFade(
-            duration: const Duration(milliseconds: 300),
-            crossFadeState: _isExpanded
-                ? CrossFadeState.showSecond
-                : CrossFadeState.showFirst,
-            firstChild: const SizedBox.shrink(),
-            secondChild: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  _buildRow(
-                    "Exchange Rate",
-                    vm.exchangeRate != 0 &&
-                        vm.exchangeRate.isFinite
-                        ? "1 INR = ${vm.exchangeRate} ${vm.selectedCurrency?.code ?? ''}"
-                        : "Unavailable",
+            // EXPANDABLE CONTENT
+            ClipRRect(
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(20),
+                bottomRight: Radius.circular(20),
+              ),
+              child: AnimatedSize(
+                duration: const Duration(milliseconds: 350),
+                curve: Curves.easeInOutCubic,
+                alignment: Alignment.topCenter,
+                child: (_isExpanded && !isLoading)
+                    ? Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                  color: Colors.white,
+                  child: Column(
+                    children: [
+                      _buildRow(
+                        "Exchange Rate",
+                        vm.exchangeRate != 0 && vm.exchangeRate.isFinite
+                            ? "1 INR = ${vm.exchangeRate} ${vm.selectedCurrency?.code ?? ''}"
+                            : "Unavailable",
+                      ),
+                      _buildRow("Service Fee", "₹${vm.serviceCharge.toStringAsFixed(2)}"),
+                      _buildRow("GST", "₹${vm.gstAmount.toStringAsFixed(2)}"),
+                      _buildRow("TCS", "₹${vm.tcsAmount.toStringAsFixed(2)}"),
+                    ],
                   ),
-                  _buildRow(
-                    "Service Fee",
-                    "₹${vm.serviceCharge.toStringAsFixed(2)}",
-                  ),
-                  _buildRow(
-                    "GST",
-                    "₹${vm.gstAmount.toStringAsFixed(2)}",
-                  ),
-                  _buildRow(
-                    "TCS",
-                    "₹${vm.tcsAmount.toStringAsFixed(2)}",
-                  ),
-                ],
+                )
+                    : const SizedBox.shrink(),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

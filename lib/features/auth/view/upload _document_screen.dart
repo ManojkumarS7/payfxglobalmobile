@@ -9,6 +9,7 @@ import 'package:payfxglobal/features/auth/service/kyc_api_service.dart';
 import 'package:payfxglobal/paystudy/core/constants/app_snackbar.dart';
 import 'package:payfxglobal/services/api_service.dart';
 import 'package:payfxglobal/utils/app_theme.dart';
+import 'package:payfxglobal/utils/user_storage.dart';
 import 'package:payfxglobal/widgets/custom_app_bar.dart';
 import 'package:payfxglobal/widgets/custom_button.dart';
 import 'package:payfxglobal/widgets/custom_loading_indicator.dart';
@@ -100,13 +101,25 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
 
       if (response['success'] == true) {
         if (!mounted) return;
+
+        // Save user data from KYC response using UserStorage same as login response
+        final rawData = response['data'];
+        Map<String, dynamic> userData = {};
+        if (rawData is Map) {
+          userData = Map<String, dynamic>.from(rawData);
+        }
+        if (userData.isNotEmpty) {
+          await UserStorage.saveUserData(userData);
+        }
+
         await showDialog(
           context: context,
           barrierDismissible: false,
           builder: (context) => ProfileCreatedDialog(
             userId: userId,
+            userData: userData,
             onNext: () {
-               // After success, we go to login so the user can re-authenticate and refresh the step_no
+               // After success, go to login or home
                Navigator.pushReplacementNamed(context, '/login', arguments: {'user_id': userId});
             }
           ),
