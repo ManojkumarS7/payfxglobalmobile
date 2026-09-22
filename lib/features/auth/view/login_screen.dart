@@ -164,7 +164,16 @@ class _LoginScreenState extends State<LoginScreen> {
     final result = await vm.login();
 
     if (!mounted) return;
+    _processLoginResult(result);
+  }
 
+  Future<void> _handleGoogleLogin() async {
+    final result = await vm.handleGoogleSignIn();
+    if (!mounted) return;
+    _processLoginResult(result);
+  }
+
+  Future<void> _processLoginResult(Map<String, dynamic> result) async {
     if (result['success'] == true) {
       final apiKey = result['api_key'];
       final userData = result['data'] as Map<String, dynamic>?;
@@ -176,21 +185,18 @@ class _LoginScreenState extends State<LoginScreen> {
 
       await AuthApiService.setApiKey(apiKey);
       await UserStorage.saveUserData(userData);
-
-      // Initialize session timers for the newly logged-in user
       await SessionManager.updateLastActive();
-
       await LoginScreen.askBiometricPermission(context);
 
       AppSnackbar.show(context, AppConstants.loginSuccess, success: true);
 
       if (!mounted) return;
-
       LoginScreen.navigateToCorrectStep(context, userData);
-    } else {
+    } else if (result['message'] != 'Google Sign-In cancelled') {
+      print('Error: ${result['message'] ?? 'Authentication failed'}');
       AppSnackbar.show(
         context,
-        result['message'] ?? 'Login failed',
+        result['message'] ?? 'Authentication failed',
         success: false,
       );
     }
@@ -295,6 +301,42 @@ class _LoginScreenState extends State<LoginScreen> {
                               title: 'Sign In',
                               loading: vm.isLoading,
                               onPressed: vm.isLoading ? null : _handleLogin,
+                            ),
+                            const SizedBox(height: 20),
+                            const Row(
+                              children: [
+                                Expanded(child: Divider()),
+                                Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 16),
+                                  child: Text('OR', style: TextStyle(color: Colors.grey)),
+                                ),
+                                Expanded(child: Divider()),
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  side: BorderSide(color: Colors.grey.shade300),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                                icon: Image.asset(
+                                  'assets/icons/search.png',
+                                  height: 24,
+                                ),
+                                label: const Text(
+                                  'Continue with Google',
+                                  style: TextStyle(
+                                    color: Colors.black87,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    fontFamily: 'Satoshi',
+                                  ),
+                                ),
+                                onPressed: vm.isLoading ? null : _handleGoogleLogin,
+                              ),
                             ),
                             const SizedBox(height: 24),
                             Row(

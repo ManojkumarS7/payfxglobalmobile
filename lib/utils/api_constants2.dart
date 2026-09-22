@@ -32,6 +32,7 @@ class ApiConstants {
       '$baseUrl/app/customer/offlinepaymentdetails';
   static const String getSubmitUtrUrl = '$baseUrl/app/customer/apisubmitutr';
   static const String loginUrl = '$baseUrl/app/customer/login';
+  static const String googleLoginUrl = '$baseUrl/app/customer/googleLogin';
   static const String logoutUrl = '$baseUrl/app/customer/logout';
   static const String updatePasswordUrl =
       '$baseUrl/app/customer/updatePassword';

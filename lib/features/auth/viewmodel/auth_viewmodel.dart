@@ -5,6 +5,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:payfxglobal/features/auth/service/auth_api_service.dart';
 
 import '../../../services/network_service.dart';
@@ -33,7 +34,16 @@ Timer? otpTimer;
 int remainingSeconds = 180;
 bool get canResendOtp => remainingSeconds == 0;
 
-
+GoogleSignIn get _googleSignIn => Platform.isIOS
+    ? GoogleSignIn(
+        clientId: '372707738831-nmmaplfau4hsdrrdion59nl4217evqc2.apps.googleusercontent.com',
+        serverClientId: '372707738831-a9gksguukfraaiav905lvg13l2h7cesl.apps.googleusercontent.com',
+        scopes: ['email', 'profile'],
+      )
+    : GoogleSignIn(
+        serverClientId: '372707738831-a9gksguukfraaiav905lvg13l2h7cesl.apps.googleusercontent.com',
+        scopes: ['email', 'profile'],
+      );
 
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController confirmPasswordController = TextEditingController();
@@ -334,6 +344,69 @@ String get enteredOtp {
       return {
         'success': false,
       };
+    }
+  }
+
+  Future<Map<String, dynamic>> handleGoogleSignIn() async {
+    try {
+      isLoading = true;
+      notifyListeners();
+
+      // Sign out first to clear any cached stale tokens that return null idToken
+      final googleSignIn = _googleSignIn;
+      await googleSignIn.signOut();
+
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+      if (googleUser == null) {
+        isLoading = false;
+        notifyListeners();
+        return {'success': false, 'message': 'Google Sign-In cancelled'};
+      }
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      String? idToken = googleAuth.idToken;
+
+      // If idToken is null, try disconnecting and signing in again
+      if (idToken == null) {
+        debugPrint('idToken null on first attempt — retrying after disconnect');
+        await googleSignIn.disconnect();
+        final retryUser = await googleSignIn.signIn();
+        if (retryUser == null) {
+          isLoading = false;
+          notifyListeners();
+          return {'success': false, 'message': 'Google Sign-In cancelled'};
+        }
+        final retryAuth = await retryUser.authentication;
+        idToken = retryAuth.idToken;
+      }
+
+      if (idToken == null) {
+        isLoading = false;
+        notifyListeners();
+        return {'success': false, 'message': 'Failed to get ID token from Google. Please check your Firebase configuration.'};
+      }
+
+      String? fcmToken;
+      try {
+        fcmToken = await FirebaseMessaging.instance.getToken();
+      } catch (e) {
+        debugPrint('Error getting FCM token: $e');
+      }
+
+      final result = await apiService.loginWithGoogle(
+        idToken: idToken,
+        fcmToken: fcmToken ?? '',
+      );
+
+      isLoading = false;
+      notifyListeners();
+
+      return result;
+    } catch (e) {
+      isLoading = false;
+      notifyListeners();
+      debugPrint('Google Sign-In Error: $e');
+      return {'success': false, 'message': e.toString()};
     }
   }
 

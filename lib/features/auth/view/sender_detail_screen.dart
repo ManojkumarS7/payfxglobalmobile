@@ -397,6 +397,7 @@ class _SenderDetailsScreenState extends State<SenderDetailsScreen> {
 
       if (!mounted) return;
 
+      print(message);
       AppSnackbar.show(
         context,
         message,

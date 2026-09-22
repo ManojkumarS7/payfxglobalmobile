@@ -11,6 +11,7 @@ import 'package:payfxglobal/widgets/custom_app_bar.dart';
 import 'package:payfxglobal/widgets/custom_loading_indicator.dart';
 import 'package:payfxglobal/widgets/app_snackbar.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'login_screen.dart';
 
 class EmailEntryScreen extends StatefulWidget {
   final String? previousPage;
@@ -31,7 +32,25 @@ class _EmailEntryScreenState extends State<EmailEntryScreen> {
       apiService: AuthApiService());
   }
 
+  Future<void> _handleGoogleLogin() async {
+    if (!vm.isAgreed) {
+      AppSnackbar.show(context, 'Please agree to the Terms & Conditions and Privacy Policy', success: false);
+      return;
+    }
 
+    final result = await vm.handleGoogleSignIn();
+    if (!mounted) return;
+    
+    if (result['success'] == true) {
+      final userData = result['data'] as Map<String, dynamic>?;
+      if (userData != null) {
+        await AuthApiService.setApiKey(result['api_key']);
+        LoginScreen.navigateToCorrectStep(context, userData);
+      }
+    } else if (result['message'] != 'Google Sign-In cancelled') {
+      AppSnackbar.show(context, result['message'] ?? 'Authentication failed', success: false);
+    }
+  }
 
   void _showTermsDialog() {
     showDialog(
@@ -155,7 +174,7 @@ class _EmailEntryScreenState extends State<EmailEntryScreen> {
           body: Stack(
             children: [
               SafeArea(
-                child: Column( // ← Changed from SingleChildScrollView wrapper to Column
+                child: Column(
                   children: [
                     Expanded(
                       child: SingleChildScrollView(
@@ -259,6 +278,39 @@ class _EmailEntryScreenState extends State<EmailEntryScreen> {
                                         ),
                                       ),
                                     ],
+                                  ),
+                                  const SizedBox(height: 32),
+                                  const Row(
+                                    children: [
+                                      Expanded(child: Divider()),
+                                      Padding(
+                                        padding: EdgeInsets.symmetric(horizontal: 16),
+                                        child: Text('OR', style: TextStyle(color: Colors.grey)),
+                                      ),
+                                      Expanded(child: Divider()),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 24),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: OutlinedButton.icon(
+                                      style: OutlinedButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(vertical: 14),
+                                        side: BorderSide(color: Colors.grey.shade300),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      ),
+                                      icon:  Image.asset('assets/icons/search.png', width: 24, height: 24,),
+                                      label: const Text(
+                                        'Continue with Google',
+                                        style: TextStyle(
+                                          color: Colors.black87,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                          fontFamily: 'Satoshi',
+                                        ),
+                                      ),
+                                      onPressed: vm.isLoading ? null : _handleGoogleLogin,
+                                    ),
                                   ),
                                 ],
                               )

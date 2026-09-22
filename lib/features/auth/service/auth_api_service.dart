@@ -1,13 +1,11 @@
 
 import 'dart:convert';
 import 'dart:io';
-import 'package:file_picker/src/platform_file.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:payfxglobal/utils/api_constants2.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 
 class AuthApiService {
@@ -351,5 +349,13 @@ class AuthApiService {
     return jsonDecode(response.body);
   }
 
-
+  Future<Map<String, dynamic>> loginWithGoogle({required String idToken, required String fcmToken}) async {
+    final response = await http.post(
+      Uri.parse(ApiConstants.googleLoginUrl),
+      headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+      body: jsonEncode({'id_token': idToken, 'fcm_token': fcmToken}),
+    );
+    debugPrint('Google Login Response: ${response.body}');
+    return jsonDecode(response.body);
+  }
 }

@@ -223,7 +223,7 @@ class _IdentityVerificationScreenState
                               },
                             );
                           } else {
-                            AppSnackbar.show(context, 'PAN verification failed', success: false);
+                            AppSnackbar.show(context, response['message'] ?? '', success: false);
                           }
                         },
                 ),

@@ -12,7 +12,20 @@
           "package_name": "com.payfx.payfxglobal"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "372707738831-dlffe11req0hqh2i89mbl6itgscntt8n.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.payfx.payfxglobal",
+            "certificate_hash": "1920f44bde8a60bb691eea4c41bfa6d7de93d370"
+          }
+        },
+        {
+          "client_id": "372707738831-a9gksguukfraaiav905lvg13l2h7cesl.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBGMyi6fujHV45DNZ8UcaPvmcjQuxXfIuo"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "372707738831-a9gksguukfraaiav905lvg13l2h7cesl.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "372707738831-nmmaplfau4hsdrrdion59nl4217evqc2.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.payfx.payfxglobalapp"
+              }
+            }
+          ]
         }
       }
     }
