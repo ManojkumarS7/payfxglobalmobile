@@ -1,0 +1,5 @@
+ extern const unsigned char flutter_cashfree_pg_sdkVersionString[];
+ extern const double flutter_cashfree_pg_sdkVersionNumber;
+
+ const unsigned char flutter_cashfree_pg_sdkVersionString[] __attribute__ ((used)) = "@(#)PROGRAM:flutter_cashfree_pg_sdk  PROJECT:Pods-1" "\n";
+ const double flutter_cashfree_pg_sdkVersionNumber __attribute__ ((used)) = (double)1.;

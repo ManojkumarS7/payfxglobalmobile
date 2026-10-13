@@ -1,0 +1,4 @@
+
+module AppCheckCore.__Swift {
+  exclude header "AppCheckCore-Swift.h"
+}

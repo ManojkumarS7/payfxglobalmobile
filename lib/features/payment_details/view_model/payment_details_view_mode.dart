@@ -681,6 +681,10 @@ class PaymentDetailsViewModel extends ChangeNotifier {
       throw Exception('User id missing');
     }
 
+    if (transactionId == null || transactionId == 0) {
+      throw Exception('Transaction id missing. Please go back and try again.');
+    }
+
     if (selectedReasonId == null) {
       throw Exception('Reason missing');
     }
@@ -700,7 +704,7 @@ class PaymentDetailsViewModel extends ChangeNotifier {
     try {
       return await service.createTransaction(
         customerId: userId!,
-        transactionId: transactionId ?? 0,
+        transactionId: transactionId!,
         name: enteredName,
         dob: enteredDob,
         method: 'bank',

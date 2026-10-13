@@ -7,6 +7,22 @@ import 'package:payfxglobal/utils/user_storage.dart';
 class DashboardService {
   static const Duration timeoutDuration = Duration(seconds: 15);
 
+  Future<Map<String, dynamic>> getDashboardData() async {
+    try {
+      final headers = await ApiService.authHeaders();
+      final response = await http.get(
+        Uri.parse("https://www.payfxglobal.com/app/customer/dashboard"),
+        headers: headers,
+      ).timeout(timeoutDuration);
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+    } catch (e) {
+      // Handle error
+    }
+    return {};
+  }
 
   Future<Map<String, dynamic>> getCustomerData(
       Map<String, dynamic> userData,

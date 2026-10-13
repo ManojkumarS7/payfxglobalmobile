@@ -1,0 +1,5 @@
+
+module flutter_cashfree_pg_sdk.Swift {
+  header "flutter_cashfree_pg_sdk-Swift.h"
+  requires objc
+}

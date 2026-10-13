@@ -1,0 +1,16 @@
+{
+  "" : {
+    "const-values" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/flutter_cashfree_pg_sdk.build/Objects-normal/arm64/flutter_cashfree_pg_sdk-primary.swiftconstvalues",
+    "dependencies" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/flutter_cashfree_pg_sdk.build/Objects-normal/arm64/flutter_cashfree_pg_sdk-primary.d",
+    "diagnostics" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/flutter_cashfree_pg_sdk.build/Objects-normal/arm64/flutter_cashfree_pg_sdk-primary.dia",
+    "emit-module-dependencies" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/flutter_cashfree_pg_sdk.build/Objects-normal/arm64/flutter_cashfree_pg_sdk-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/flutter_cashfree_pg_sdk.build/Objects-normal/arm64/flutter_cashfree_pg_sdk-primary-emit-module.dia",
+    "pch" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/flutter_cashfree_pg_sdk.build/Objects-normal/arm64/flutter_cashfree_pg_sdk-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/flutter_cashfree_pg_sdk.build/Objects-normal/arm64/flutter_cashfree_pg_sdk-primary.swiftdeps"
+  },
+  "/Users/apple/.pub-cache/hosted/pub.dev/flutter_cashfree_pg_sdk-2.3.4+51/ios/Classes/SwiftFlutterCashfreePgSdkPlugin.swift" : {
+    "index-unit-output-path" : "/Pods.build/Release-iphoneos/flutter_cashfree_pg_sdk.build/Objects-normal/arm64/SwiftFlutterCashfreePgSdkPlugin.o",
+    "llvm-bc" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/flutter_cashfree_pg_sdk.build/Objects-normal/arm64/SwiftFlutterCashfreePgSdkPlugin.bc",
+    "object" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/flutter_cashfree_pg_sdk.build/Objects-normal/arm64/SwiftFlutterCashfreePgSdkPlugin.o"
+  }
+}

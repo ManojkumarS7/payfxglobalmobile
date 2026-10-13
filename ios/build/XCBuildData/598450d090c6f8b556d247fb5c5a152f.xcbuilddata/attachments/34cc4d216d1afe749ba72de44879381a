@@ -1,0 +1,4 @@
+
+module flutter_cashfree_pg_sdk.__Swift {
+  exclude header "flutter_cashfree_pg_sdk-Swift.h"
+}

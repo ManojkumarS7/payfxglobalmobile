@@ -1,9 +1,7 @@
-
-
 import 'package:flutter/material.dart';
-import 'package:payfxglobal/utils/app_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../paystudy/core/network/api_service.dart';
+
+import '../../utils/app_theme.dart';
 
 class IntroScreen extends StatefulWidget {
   const IntroScreen({super.key});
@@ -13,45 +11,38 @@ class IntroScreen extends StatefulWidget {
 
 class _IntroScreenState extends State<IntroScreen> {
   final PageController _pageController = PageController();
-
   int _currentPage = 0;
+
+  // ---- Palette (Matched with Dashboard) ----
+  static const Color _navy =  AppTheme.PrimaryColor;
+  static const Color _ink = Color(0xFF0B1B3A);
+  static const Color _accent = Color(0xFFFFC72C);
+  static const Color _bg = Color(0xFFF5F7FB);
+  static const String _font = 'Satoshi';
+
   final List<Map<String, String>> _introData = [
     {
       'title': 'Global Remittance',
-      'description':
-      'PayFX Global provides secure and reliable international remittance services for students, individuals, and businesses. We support fast cross-border money transfers with competitive exchange rates, transparent processing, and dedicated customer assistance for global payment needs',
+      'description': 'Send money across borders with ease. Fast, secure, and competitive exchange rates for all your global needs.',
       'image': 'assets/images/introglobal.png',
     },
     {
       'title': 'Education Loan',
-      'description':
-      'PayFX Global provides education loan assistance services by supporting students in identifying suitable financing options for overseas education. We assist with documentation guidance, application support, and coordination with financial institutions to simplify the loan process',
+      'description': 'Supporting your academic dreams with hassle-free loan assistance and documentation guidance for overseas study.',
       'image': 'assets/images/introedu.png',
     },
     {
-      'title': 'Blocked Account / GIC Account Opening Assitance',
-      'description':
-      'PayFX Global provides assistance for opening Blocked Accounts and Guaranteed Investment Certificate (GIC) accounts required for international education and visa purposes. We support students with account opening procedures, documentation requirements, and onboarding guidance for a smooth process.',
+      'title': 'Study Abroad Accounts',
+      'description': 'Expert assistance for opening Blocked Accounts and GIC required for your international education journey.',
       'image': 'assets/images/introgic.png',
     },
   ];
 
-  static const Color _navy = Color(0xFF16305C);
-
   void _onFinish() async {
     final prefs = await SharedPreferences.getInstance();
-    // Fix: Write seen_intro as true to SharedPreferences
     await prefs.setBool('seen_intro', true);
-    final seenIntro = prefs.getBool('seen_intro') ?? false;
-    debugPrint('====================');
-    debugPrint('seen_intro = $seenIntro');
-    debugPrint('====================');
-    if (!context.mounted) return;
+    if (!mounted) return;
     Navigator.pushReplacementNamed(context, '/welcome');
-  }
-
-  void _onSkip() {
-    _onFinish();
   }
 
   @override
@@ -59,133 +50,76 @@ class _IntroScreenState extends State<IntroScreen> {
     final isLastPage = _currentPage == _introData.length - 1;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: _bg,
       body: Stack(
         children: [
-          // Background image
+          // Background subtle pattern or image
           Positioned.fill(
-            child: OverflowBox(
-              maxWidth: double.infinity,
-              maxHeight: double.infinity,
-              child: Image.asset(
-                'assets/images/Firefly.png',
-                fit: BoxFit.cover,
-                width: MediaQuery.of(context).size.width,
-                height: MediaQuery.of(context).size.height,
-              ),
+            child: Opacity(
+              opacity: 0.05,
+              child: Image.asset('assets/images/Firefly.png', fit: BoxFit.cover),
             ),
-          ),
-          // Flat white scrim (no gradient) so the background never fights with the text
-          Positioned.fill(
-            child: Container(color: Colors.white.withOpacity(0.88)),
           ),
           SafeArea(
             child: Column(
               children: [
-                Align(
-                  alignment: Alignment.topRight,
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 8, right: 16),
-                    child: TextButton(
-                      onPressed: _onSkip,
-                      child: Text(
-                        'Skip',
-                        style: TextStyle(
-                          fontFamily: 'Satoshi',
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.PrimaryColor,
-                        ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 10),
+                        child: Image.asset('assets/images/payfx.png', height: 40, fit: BoxFit.contain, 
+                            errorBuilder: (_, __, ___) => const Text('PayFX', style: TextStyle(fontFamily: _font, fontSize: 20, fontWeight: FontWeight.w900, color: _navy))),
                       ),
-                    ),
+                      TextButton(
+                        onPressed: _onFinish,
+                        child: const Text('Skip', style: TextStyle(fontFamily: _font, fontSize: 14, fontWeight: FontWeight.w800, color: Colors.grey)),
+                      ),
+                    ],
                   ),
                 ),
                 Expanded(
                   child: PageView.builder(
                     controller: _pageController,
-                    onPageChanged: (index) {
-                      setState(() {
-                        _currentPage = index;
-                      });
-                    },
+                    onPageChanged: (index) => setState(() => _currentPage = index),
                     itemCount: _introData.length,
                     itemBuilder: (context, index) {
                       return Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 10, 24, 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Container(
-                              height: 220,
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(20),
-                              child: Center(
-                                child: Image.asset(
-                                  height: 500,
-                                  _introData[index]['image']!,
-                                  fit: BoxFit.contain,
+                            _FadeSlide(
+                              index: 0,
+                              child: Container(
+                                height: 280,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(32),
+                                  boxShadow: [BoxShadow(color: _navy.withOpacity(0.06), blurRadius: 20, offset: const Offset(0, 10))],
                                 ),
+                                padding: const EdgeInsets.all(30),
+                                child: Image.asset(_introData[index]['image']!, fit: BoxFit.contain),
                               ),
                             ),
-                            const SizedBox(height: 32),
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(20),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
+                            const SizedBox(height: 50),
+                            _FadeSlide(
+                              index: 1,
+                              child: Text(
+                                _introData[index]['title']!,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(fontFamily: _font, fontSize: 26, fontWeight: FontWeight.w900, color: _ink, letterSpacing: -0.5),
                               ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: AppTheme.PrimaryColor.withOpacity(0.15),
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Text(
-                                      'STEP ${index + 1} OF ${_introData.length}',
-                                      style: TextStyle(
-                                        fontFamily: 'Satoshi',
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w700,
-                                        letterSpacing: 0.5,
-                                        color: AppTheme.PrimaryColor,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 14),
-                                  Text(
-                                    _introData[index]['title']!,
-                                    style: const TextStyle(
-                                      fontFamily: 'Satoshi',
-                                      fontSize: 21,
-                                      fontWeight: FontWeight.w800,
-                                      color: _navy,
-                                      height: 1.25,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    _introData[index]['description']!,
-                                    textAlign: TextAlign.left,
-                                    style: TextStyle(
-                                      fontFamily: 'Satoshi',
-                                      fontSize: 14.5,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.grey.shade700,
-                                      height: 1.5,
-                                    ),
-                                  ),
-                                ],
+                            ),
+                            const SizedBox(height: 16),
+                            _FadeSlide(
+                              index: 2,
+                              child: Text(
+                                _introData[index]['description']!,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(fontFamily: _font, fontSize: 15, color: Colors.grey.shade600, height: 1.6, fontWeight: FontWeight.w600),
                               ),
                             ),
                           ],
@@ -195,59 +129,40 @@ class _IntroScreenState extends State<IntroScreen> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Row(
                         children: List.generate(
                           _introData.length,
-                              (index) => AnimatedContainer(
+                          (index) => AnimatedContainer(
                             duration: const Duration(milliseconds: 300),
                             margin: const EdgeInsets.only(right: 8),
-                            height: 8,
-                            width: _currentPage == index ? 24 : 8,
+                            height: 6,
+                            width: _currentPage == index ? 24 : 6,
                             decoration: BoxDecoration(
-                              color: _currentPage == index ? AppTheme.PrimaryColor : Colors.grey.shade300,
-                              borderRadius: BorderRadius.circular(4),
+                              color: _currentPage == index ? _navy : Colors.grey.withOpacity(0.3),
+                              borderRadius: BorderRadius.circular(3),
                             ),
                           ),
                         ),
                       ),
-                      ElevatedButton(
-                        onPressed: () {
-                          if (isLastPage) {
-                            _onFinish();
-                          } else {
-                            _pageController.nextPage(
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeIn,
-                            );
-                          }
+                      _Pressable(
+                        onTap: () {
+                          if (isLastPage) _onFinish();
+                          else _pageController.nextPage(duration: const Duration(milliseconds: 400), curve: Curves.easeOutCubic);
                         },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.PrimaryColor,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                          decoration: BoxDecoration(color: _navy, borderRadius: BorderRadius.circular(30), boxShadow: [BoxShadow(color: _navy.withOpacity(0.2), blurRadius: 12, offset: const Offset(0, 6))]),
+                          child: Row(
+                            children: [
+                              Text(isLastPage ? 'Get Started' : 'Next', style: const TextStyle(fontFamily: _font, color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800)),
+                              const SizedBox(width: 8),
+                              const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 18),
+                            ],
                           ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              isLastPage ? 'Get Started' : 'Next',
-                              style: const TextStyle(
-                                fontFamily: 'Satoshi',
-                                color: Colors.white,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 18),
-                          ],
                         ),
                       ),
                     ],
@@ -262,3 +177,49 @@ class _IntroScreenState extends State<IntroScreen> {
   }
 }
 
+class _FadeSlide extends StatelessWidget {
+  final Widget child;
+  final int index;
+  const _FadeSlide({required this.child, this.index = 0});
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: Duration(milliseconds: 600 + index * 150),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) => Opacity(
+        opacity: value.clamp(0.0, 1.0),
+        child: Transform.translate(offset: Offset(0, 30 * (1 - value)), child: child),
+      ),
+      child: child,
+    );
+  }
+}
+
+class _Pressable extends StatefulWidget {
+  final Widget child;
+  final VoidCallback? onTap;
+  const _Pressable({required this.child, this.onTap});
+  @override
+  State<_Pressable> createState() => _PressableState();
+}
+
+class _PressableState extends State<_Pressable> {
+  bool _down = false;
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) => setState(() => _down = true),
+      onTapCancel: () => setState(() => _down = false),
+      onTapUp: (_) => setState(() => _down = false),
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _down ? 0.96 : 1,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: widget.child,
+      ),
+    );
+  }
+}

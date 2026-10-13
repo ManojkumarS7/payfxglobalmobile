@@ -1,0 +1,5 @@
+
+module AppCheckCore.Swift {
+  header "AppCheckCore-Swift.h"
+  requires objc
+}

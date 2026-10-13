@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:payfxglobal/paystudy/core/constants/app_snackbar.dart';
-import 'package:payfxglobal/utils/app_theme.dart';
-import 'package:payfxglobal/widgets/custom_app_bar.dart';
-import 'package:payfxglobal/widgets/custom_button.dart';
+import 'package:payfxglobal/widgets/app_snackbar.dart';
 import 'package:payfxglobal/widgets/custom_loading_indicator.dart';
 import 'package:payfxglobal/widgets/feedback_dialog.dart';
+import '../../../utils/app_theme.dart';
 import '../service/payment_success_service.dart';
 import '../view_model/payment_success_view_model.dart';
 
@@ -22,21 +20,22 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
   late PaymentSuccessViewModel vm;
   bool _feedbackShown = false;
 
+  // ---- Palette (Matched with Dashboard) ----
+  static const Color _navy =  AppTheme.PrimaryColor;
+  static const Color _ink = Color(0xFF0B1B3A);
+  static const Color _accent = Color(0xFFFFC72C);
+  static const Color _bg = Color(0xFFF5F7FB);
+  static const String _font = 'Satoshi';
+
   @override
   void initState() {
     super.initState();
-
-    vm = PaymentSuccessViewModel(
-      apiService: PaymentSuccessApiService(),
-    );
+    vm = PaymentSuccessViewModel(apiService: PaymentSuccessApiService());
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final args = ModalRoute.of(context)?.settings.arguments;
-
       if (args is Map) {
-        await vm.fetchDetails(
-          args: Map<String, dynamic>.from(args),
-        );
+        await vm.fetchDetails(args: Map<String, dynamic>.from(args));
       } else {
         await vm.fetchDetails(args: {});
       }
@@ -54,35 +53,21 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
       barrierDismissible: true,
       builder: (context) => FeedbackDialog(
         onSubmit: (rating, comment) {
-          debugPrint('Feedback Received: Rating: $rating, Comment: $comment');
-          AppSnackbar.show(
-            context,
-            'Thank you for your feedback!',
-            success: true,
-          );
+          AppSnackbar.show(context, 'Thank you for your feedback!', success: true);
         },
       ),
     );
   }
 
   void _navigateToDashboard() {
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      '/dashboard',
-      (route) => false,
-    );
+    Navigator.of(context).pushNamedAndRemoveUntil('/dashboard', (route) => false);
   }
 
   Future<void> _downloadInstructions() async {
     try {
       await vm.downloadInstructions();
     } catch (e) {
-      if (!mounted) return;
-
-      AppSnackbar.show(
-        context,
-        'Failed to download instructions',
-        success: false,
-      );
+      if (mounted) AppSnackbar.show(context, 'Failed to download instructions', success: false);
     }
   }
 
@@ -98,41 +83,31 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
       animation: vm,
       builder: (context, _) {
         if (vm.isLoading) {
-          return const Scaffold(
-            backgroundColor: Colors.white,
-            body: Center(
-              child: CustomLoadingIndicator(),
-            ),
-          );
+          return const Scaffold(backgroundColor: _bg, body: Center(child: CustomLoadingIndicator()));
         }
 
         if (vm.error != null) {
           return Scaffold(
-            backgroundColor: Colors.white,
+            backgroundColor: _bg,
             body: Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
-                      Icons.error_outline,
-                      color: Colors.red,
-                      size: 48,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      vm.error!,
-                      style: const TextStyle(
-                        fontFamily: 'Satoshi',
-                        fontSize: 16,
+                    const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 64),
+                    const SizedBox(height: 20),
+                    Text(vm.error!, textAlign: TextAlign.center, style: const TextStyle(fontFamily: _font, fontSize: 16, fontWeight: FontWeight.w700, color: _ink)),
+                    const SizedBox(height: 32),
+                    _Pressable(
+                      onTap: _navigateToDashboard,
+                      child: Container(
+                        width: double.infinity,
+                        height: 56,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(color: _navy, borderRadius: BorderRadius.circular(30)),
+                        child: const Text('Go Home', style: TextStyle(fontFamily: _font, fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 24),
-                    AppPrimaryButton(
-                      title: 'Go Home',
-                      onPressed: _navigateToDashboard,
                     ),
                   ],
                 ),
@@ -141,6 +116,7 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
           );
         }
 
+        int i = 0;
         return PopScope(
           canPop: false,
           onPopInvokedWithResult: (didPop, result) {
@@ -148,107 +124,83 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
             _navigateToDashboard();
           },
           child: Scaffold(
-            backgroundColor: AppTheme.backgroundColor,
-            appBar: const AppPrimaryAppBar(
-              title: 'Success',
-              showBackButton: false,
-            ),
-            body: Stack(
-              children: [
-                SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 16),
-                      Container(
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.green,
-                        ),
-                        padding: const EdgeInsets.all(16),
-                        child: const Icon(
-                          Icons.check,
-                          color: Colors.white,
-                          size: 40,
-                        ),
+            backgroundColor: _bg,
+            body: SafeArea(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(20, 40, 20, 30),
+                child: Column(
+                  children: [
+                    _FadeSlide(
+                      index: i++,
+                      child: Container(
+                        width: 80,
+                        height: 80,
+                        decoration: const BoxDecoration(color: Color(0xFFE5F8E0), shape: BoxShape.circle),
+                        child: const Icon(Icons.check_rounded, color: Color(0xFF0F7B4F), size: 48),
                       ),
-                      const SizedBox(height: 24),
-                      const Text(
-                        'Transaction Submitted',
-                        style: TextStyle(
-                          fontFamily: 'Satoshi',
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.TextColor,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Submitted on ${vm.datetime}',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontFamily: 'Satoshi',
-                          color: Colors.black54,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                      _buildDetailCard(),
-                      const SizedBox(height: 24),
-                      if (vm.isOffline) ...[
-                        const SizedBox(height: 20),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.shade50,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.orange.shade200,
-                            ),
-                          ),
-                          child: Row(
+                    ),
+                    const SizedBox(height: 24),
+                    _FadeSlide(index: i++, child: const Text('Payment Submitted', style: TextStyle(fontFamily: _font, fontSize: 26, fontWeight: FontWeight.w900, color: _ink, letterSpacing: -0.5))),
+                    const SizedBox(height: 8),
+                    _FadeSlide(index: i++, child: Text('Reference: ${vm.referenceNumber}', style: TextStyle(fontFamily: _font, color: Colors.grey.shade600, fontSize: 14, fontWeight: FontWeight.w700))),
+                    const SizedBox(height: 32),
+                    _FadeSlide(index: i++, child: _buildDetailCard()),
+                    const SizedBox(height: 24),
+                    if (vm.isOffline) ...[
+                      _FadeSlide(
+                        index: i++,
+                        child: Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(color: const Color(0xFFFFF6E5), borderRadius: BorderRadius.circular(24), border: Border.all(color: const Color(0xFFFFE0A3))),
+                          child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(
-                                Icons.info_outline,
-                                color: Colors.orange.shade800,
-                                size: 20,
+                              const Row(
+                                children: [
+                                  Icon(Icons.info_rounded, color: _navy, size: 20),
+                                  SizedBox(width: 8),
+                                  Text('Action Required', style: TextStyle(fontFamily: _font, fontWeight: FontWeight.w800, color: _ink)),
+                                ],
                               ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  'Please download the instructions and submit your UTR number in the Transaction History page within 48 hours.',
-                                  style: TextStyle(
-                                    fontFamily: 'Satoshi',
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.orange.shade900,
-                                  ),
+                              const SizedBox(height: 10),
+                              Text('Please download instructions and submit your UTR number in Transaction History within 48 hours.', 
+                                style: TextStyle(fontFamily: _font, fontSize: 13, color: _ink.withOpacity(0.8), height: 1.5, fontWeight: FontWeight.w600)),
+                              const SizedBox(height: 16),
+                              _Pressable(
+                                onTap: vm.isDownloading ? null : _downloadInstructions,
+                                child: Container(
+                                  width: double.infinity,
+                                  height: 50,
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(color: _navy, borderRadius: BorderRadius.circular(25)),
+                                  child: vm.isDownloading 
+                                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                    : const Text('Download Instructions', style: TextStyle(fontFamily: _font, fontSize: 14, fontWeight: FontWeight.w800, color: Colors.white)),
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        const SizedBox(height: 16),
-                        AppPrimaryButton(
-                          title: 'Download Instructions',
-                          loading: vm.isDownloading,
-                          onPressed: vm.isDownloading
-                              ? null
-                              : _downloadInstructions,
-                        ),
-                      ],
-                      const SizedBox(height: 20),
-                      AppPrimaryButton(
-                        title: 'Go to Dashboard',
-                        onPressed: _navigateToDashboard,
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 20),
                     ],
-                  ),
+                    _FadeSlide(
+                      index: i++,
+                      child: _Pressable(
+                        onTap: _navigateToDashboard,
+                        child: Container(
+                          width: double.infinity,
+                          height: 56,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(color: _navy, borderRadius: BorderRadius.circular(30), boxShadow: [BoxShadow(color: _navy.withOpacity(0.2), blurRadius: 12, offset: const Offset(0, 6))]),
+                          child: const Text('Go to Dashboard', style: TextStyle(fontFamily: _font, fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         );
@@ -258,117 +210,77 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
 
   Widget _buildDetailCard() {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Colors.grey.shade200,
-        ),
-      ),
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(28), boxShadow: [BoxShadow(color: _navy.withOpacity(0.06), blurRadius: 16, offset: const Offset(0, 8))]),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _rowInfo(
-            'Reference Number',
-            vm.referenceNumber,
-            isBold: true,
-          ),
-          const Divider(height: 32),
-          _rowInfo(
-            'Sender',
-            vm.sender['name'] ?? '-',
-          ),
-          _rowInfo(
-            'Beneficiary',
-            vm.receiver['name'] ?? '-',
-          ),
-          _rowInfo(
-            'Bank Name',
-            vm.receiver['bank_name'] ?? '-',
-          ),
-          _rowInfo(
-            'Account Number',
-            vm.receiver['account_number'] ?? '-',
-          ),
-          const Divider(height: 32),
-          _rowInfo(
-            'Exchange Rate',
-            vm.exchangeRate > 0 ? vm.exchangeRate.toStringAsFixed(4) : '-',
-          ),
-          _rowInfo(
-            'Service Fee',
-            '₹${vm.serviceFee.toStringAsFixed(2)}',
-          ),
-          _rowInfo(
-            'GST',
-            '₹${vm.gstAmount.toStringAsFixed(2)}',
-          ),
-          _rowInfo(
-            'TCS',
-            '₹${vm.tcsAmount.toStringAsFixed(2)}',
-          ),
-          if (vm.nostroAmount > 0)
-            _rowInfo(
-              'Nostro Charge',
-              '₹${vm.nostroAmount.toStringAsFixed(2)}',
-            ),
-          const Divider(height: 32),
-          _rowInfo(
-            'Send Amount',
-            '₹${vm.sendAmount.toStringAsFixed(2)}',
-          ),
-          _rowInfo(
-            'Recipient Amount',
-            '${vm.amount['recipient_amount']} ${vm.amount['recipient_currency']}',
-            isHighlight: true,
-          ),
-          _rowInfo(
-            'Total Payable',
-            '₹${vm.totalPayable.toStringAsFixed(2)}',
-            isBold: true,
-            isHighlight: true,
-          ),
-          _rowInfo(
-            'Payment Type',
-            vm.paymentType.toUpperCase(),
-          ),
+          _infoRow('Date & Time', vm.datetime),
+          _infoRow('Sender', vm.sender['name'] ?? '-'),
+          _infoRow('Beneficiary', vm.receiver['name'] ?? '-'),
+          _infoRow('Bank Name', vm.receiver['bank_name'] ?? '-'),
+          const Padding(padding: EdgeInsets.symmetric(vertical: 16), child: Divider(height: 1, color: _bg, thickness: 2)),
+          _infoRow('Recipient Gets', '${vm.amount['recipient_amount']} ${vm.amount['recipient_currency']}', isBold: true, color: _navy),
+          _infoRow('Total Payable', '₹${vm.totalPayable.toStringAsFixed(2)}', isBold: true, color: _navy),
+          _infoRow('Payment Type', vm.paymentType.toUpperCase()),
         ],
       ),
     );
   }
 
-  Widget _rowInfo(
-    String label,
-    String value, {
-    bool isBold = false,
-    bool isHighlight = false,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontFamily: 'Satoshi',
-              color: Colors.black54,
-              fontSize: 13,
-            ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontFamily: 'Satoshi',
-              fontWeight:
-                  isBold || isHighlight ? FontWeight.w700 : FontWeight.w500,
-              color: isHighlight ? AppTheme.PrimaryColor : AppTheme.TextColor,
-              fontSize: isBold ? 15 : 14,
-            ),
-          ),
-        ],
+  Widget _infoRow(String l, String v, {bool isBold = false, Color? color}) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(l, style: TextStyle(fontFamily: _font, color: Colors.grey.shade500, fontSize: 13, fontWeight: FontWeight.w700)),
+            Text(v, style: TextStyle(fontFamily: _font, fontWeight: isBold ? FontWeight.w900 : FontWeight.w800, color: color ?? _ink, fontSize: isBold ? 15 : 14)),
+          ],
+        ),
+      );
+}
+
+class _FadeSlide extends StatelessWidget {
+  final Widget child;
+  final int index;
+  const _FadeSlide({required this.child, this.index = 0});
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: Duration(milliseconds: 450 + index * 90),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) => Opacity(
+        opacity: value.clamp(0.0, 1.0),
+        child: Transform.translate(offset: Offset(0, 24 * (1 - value)), child: child),
+      ),
+      child: child,
+    );
+  }
+}
+
+class _Pressable extends StatefulWidget {
+  final Widget child;
+  final VoidCallback? onTap;
+  const _Pressable({required this.child, this.onTap});
+  @override
+  State<_Pressable> createState() => _PressableState();
+}
+
+class _PressableState extends State<_Pressable> {
+  bool _down = false;
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) => setState(() => _down = true),
+      onTapCancel: () => setState(() => _down = false),
+      onTapUp: (_) => setState(() => _down = false),
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _down ? 0.97 : 1,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: widget.child,
       ),
     );
   }

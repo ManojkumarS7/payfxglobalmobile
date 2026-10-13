@@ -1,15 +1,12 @@
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:payfxglobal/paystudy/core/constants/app_snackbar.dart';
 import 'package:payfxglobal/services/api_service.dart';
 import 'package:payfxglobal/services/transaction_api.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:payfxglobal/utils/app_theme.dart';
-import 'package:payfxglobal/widgets/custom_app_bar.dart';
-import 'package:payfxglobal/widgets/custom_text_field.dart';
-import 'package:payfxglobal/widgets/custom_button.dart';
 import 'package:payfxglobal/widgets/custom_loading_indicator.dart';
-import 'dart:io';
+import 'package:payfxglobal/widgets/custom_text_field.dart';
 
 const double _kTcsRateNone = 0.00;
 const double _kTcsRateEducationMedical = 0.02;
@@ -165,54 +162,31 @@ class ReasonConfig {
       rels = ['Family', 'Self', 'Relative', 'Partner', 'Friend', 'Seller', 'Donor', 'Employee', 'Buyer', 'Unknown', 'Other'];
     }
 
-    final isTuition = name.contains('tuition') || name.contains('tution');
-    final isAccommodation = name.contains('accommodation') || name.contains('accomodation');
-    final isLivingCost = name.contains('living cost');
-    final isEducation = isTuition || isAccommodation || isLivingCost;
+    final isEducation = name.contains('tuition') || name.contains('tution') || name.contains('accommodation') || name.contains('accomodation') || name.contains('living cost');
     final isHospital = name.contains('medical treatment');
     final isEmigration = name.contains('emigration');
     final isCompany = name.contains('private visit') || name.contains('conference') || name.contains('skill assessment') || name.contains('visa fees') || name.contains('exam fee');
 
     String recipientType = 'individual';
     String sectionLabel = 'Individual Account Details';
-    String nameLabel = 'Individual Name (as per bank account)';
-    String addressLabel = 'Individual Address';
-    String bankNameLabel = 'Individual Bank';
-    String bankBranchLabel = 'Individual Bank Branch Name';
-    String bankAddressLabel = 'Individual Bank Address';
-    String mobileLabel = 'Mobile';
-    String emailLabel = 'Email';
+    String nameLabel = 'Name (as per bank account)';
+    String addressLabel = 'Address';
+    String bankNameLabel = 'Bank Name';
+    String bankBranchLabel = 'Bank Branch Name';
+    String bankAddressLabel = 'Bank Address';
 
-    if (isTuition) {
+    if (isEducation) {
       recipientType = 'university'; sectionLabel = 'University Account Details';
-      nameLabel = 'University Name (As Per Bank Account)'; addressLabel = 'University Address';
-      bankNameLabel = 'University Bank'; bankBranchLabel = 'University Bank Branch Name';
-      bankAddressLabel = 'University Bank Address';
-      mobileLabel = 'University Mobile'; emailLabel = 'University Email';
-    } else if (isAccommodation) {
-      recipientType = 'account'; sectionLabel = 'Account Details';
-      nameLabel = 'Account Name'; addressLabel = 'Account Address';
-      bankNameLabel = 'Account Bank'; bankBranchLabel = 'Account Bank Branch Name';
-      bankAddressLabel = 'Account Bank Address';
-      mobileLabel = 'Account Mobile'; emailLabel = 'Account Email';
+      nameLabel = 'University Name'; addressLabel = 'University Address';
     } else if (isHospital) {
       recipientType = 'hospital'; sectionLabel = 'Hospital Account Details';
-      nameLabel = 'Hospital Name (as per bank account)'; addressLabel = 'Hospital Account Address';
-      bankNameLabel = 'Hospital Account Bank'; bankBranchLabel = 'Hospital Account Branch Name';
-      bankAddressLabel = 'Hospital Account Bank Address';
-      mobileLabel = 'Hospital Mobile'; emailLabel = 'Hospital Email';
+      nameLabel = 'Hospital Name'; addressLabel = 'Hospital Address';
     } else if (isEmigration) {
-      recipientType = 'self'; sectionLabel = 'Self Overseas Account Details';
-      nameLabel = 'Self Overseas Account Name'; addressLabel = 'Self Overseas Account Address';
-      bankNameLabel = 'Self Overseas Account Bank'; bankBranchLabel = 'Self Overseas Account Branch Name';
-      bankAddressLabel = 'Self Overseas Account Bank Address';
-      mobileLabel = 'Self Overseas Account Mobile'; emailLabel = 'Self Overseas Account Email';
+      recipientType = 'self'; sectionLabel = 'Overseas Account Details';
+      nameLabel = 'Self Account Name'; addressLabel = 'Self Account Address';
     } else if (isCompany) {
       recipientType = 'company'; sectionLabel = 'Company Account Details';
-      nameLabel = 'Company Name (as per bank account)'; addressLabel = 'Company Address';
-      bankNameLabel = 'Company Bank'; bankBranchLabel = 'Company Bank Branch Name';
-      bankAddressLabel = 'Company Bank Address';
-      mobileLabel = 'Company Mobile'; emailLabel = 'Company Email';
+      nameLabel = 'Company Name'; addressLabel = 'Company Address';
     }
 
     return ReasonConfig(
@@ -226,12 +200,12 @@ class ReasonConfig {
       bankNameLabel: bankNameLabel,
       bankBranchLabel: bankBranchLabel,
       bankAddressLabel: bankAddressLabel,
-      mobileLabel: mobileLabel,
-      emailLabel: emailLabel,
+      mobileLabel: 'Mobile',
+      emailLabel: 'Email',
       relationshipOptions: rels,
       relationshipFixed: isEmigration,
       requiredDocuments: docs,
-      showEducationLoanToggle: isTuition || isAccommodation,
+      showEducationLoanToggle: name.contains('tuition') || name.contains('tution') || name.contains('accommodation') || name.contains('accomodation'),
       showNostroWarning: isEducation,
       showUniversityPicker: isEducation,
       isEducationReason: isEducation,
@@ -239,7 +213,6 @@ class ReasonConfig {
     );
   }
 }
-
 
 class UpdateDeliveryMethodScreen extends StatefulWidget {
   final String? previousPage;
@@ -250,6 +223,13 @@ class UpdateDeliveryMethodScreen extends StatefulWidget {
 }
 
 class _UpdateDeliveryMethodScreenState extends State<UpdateDeliveryMethodScreen> {
+  // ---- Palette (Matched with Dashboard) ----
+  static const Color _navy =  AppTheme.PrimaryColor;
+  static const Color _ink = Color(0xFF0B1B3A);
+  static const Color _accent = Color(0xFFFFC72C);
+  static const Color _bg = Color(0xFFF5F7FB);
+  static const String _font = 'Satoshi';
+
   final Map<String, PlatformFile?> _pickedFiles = {};
   String? _selectedRelationship;
   String? _educationLoan;
@@ -258,17 +238,11 @@ class _UpdateDeliveryMethodScreenState extends State<UpdateDeliveryMethodScreen>
   final TextEditingController _beneficiaryBankBranchController = TextEditingController();
   final TextEditingController _beneficiaryBankAddressController = TextEditingController();
   final TextEditingController _swiftCodeController = TextEditingController();
-  final TextEditingController _routingNumberController = TextEditingController();
-  final TextEditingController _transitNumberController = TextEditingController();
-  final TextEditingController _bsbCodeController = TextEditingController();
-  final TextEditingController _ibanController = TextEditingController();
-  final TextEditingController _sortCodeController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
-  final TextEditingController _countryController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _accountNumberController = TextEditingController();
   final TextEditingController _mobileController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
 
   int? _userId;
   int? _transactionId;
@@ -277,15 +251,9 @@ class _UpdateDeliveryMethodScreenState extends State<UpdateDeliveryMethodScreen>
   final _formKey = GlobalKey<FormState>();
 
   int? _fetchedTransactionId;
-
   List<Map<String, dynamic>> _countries = [];
   bool _countriesLoading = true;
   int? _selectedCountryId;
-
-  List<Map<String, dynamic>> _universities = [];
-  bool _universitiesLoading = false;
-  int? _selectedUniversityId;
-
   List<Map<String, dynamic>> _rawReasons = [];
   final Map<int, ReasonConfig> _reasonConfigs = {};
   bool _reasonsLoading = true;
@@ -297,77 +265,12 @@ class _UpdateDeliveryMethodScreenState extends State<UpdateDeliveryMethodScreen>
 
   ReasonConfig? get _currentConfig => _selectedReasonId != null ? _reasonConfigs[_selectedReasonId] : null;
 
-
-  double get _tcsRate {
-    final cfg = _currentConfig;
-    if (cfg == null) return _kTcsRateOther;
-
-    // Education loan sanctioned → TCS waived entirely
-    if (cfg.showEducationLoanToggle && _educationLoan == 'yes') {
-      return _kTcsRateNone;
-    }
-
-    if (cfg.isEducationReason || cfg.isMedicalReason) {
-      return _kTcsRateEducationMedical;
-    }
-
-    return _kTcsRateOther;
-  }
-
-  String get _tcsLabel {
-    final cfg = _currentConfig;
-    if (cfg == null) return '';
-
-    if (cfg.showEducationLoanToggle && _educationLoan == 'yes') {
-      return 'No TCS applicable (Education Loan)';
-    }
-
-    if (cfg.isEducationReason) {
-      return 'TCS @ 2% applicable (Education remittance)';
-    }
-
-    if (cfg.isMedicalReason) {
-      return 'TCS @ 2% applicable (Medical treatment)';
-    }
-
-    return 'TCS @ 20% applicable';
-  }
-
-  IconData get _tcsIcon {
-    if (_tcsRate == _kTcsRateNone)              return Icons.check_circle_outline;
-    if (_tcsRate == _kTcsRateEducationMedical)  return Icons.info_outline;
-    return Icons.warning_amber_rounded;
-  }
-
-  Color get _tcsBannerColor {
-    if (_tcsRate == _kTcsRateNone)              return Colors.green;
-    if (_tcsRate == _kTcsRateEducationMedical)  return Colors.blue;
-    return Colors.orange;
-  }
-
-// ── Nostro — mirrors PaymentDetailsScreen.showNostroWarning ───────────────
-  double get _nostroAmount {
-    final cfg = _currentConfig;
-    if (cfg == null) return 0.0;
-    return cfg.showNostroWarning ? 1000.0 : 0.0;
-  }
-
   @override
   void initState() {
     super.initState();
     ApiService.initializeApiKey();
     _fetchReasons();
     _fetchCountries();
-  }
-
-  double _toDouble(dynamic value) {
-    if (value == null) return 0.0;
-    if (value is num) return value.toDouble();
-    if (value is String) {
-      final clean = value.replaceAll(RegExp(r'[^0-9.]'), '');
-      return double.tryParse(clean) ?? 0.0;
-    }
-    return 0.0;
   }
 
   @override
@@ -379,83 +282,20 @@ class _UpdateDeliveryMethodScreenState extends State<UpdateDeliveryMethodScreen>
       _transactionId = args['transaction_id'] is int ? args['transaction_id'] : int.tryParse(args['transaction_id']?.toString() ?? '');
       _recipientId = args['selected_recipient'] is int ? args['selected_recipient'] : int.tryParse(args['selected_recipient']?.toString() ?? '');
       _sendAmount = _toDouble(args['send_amount']);
-
-      if (_recipientId != null) {
-        _ensureDataLoadedThenFetch(_recipientId!);
-      }
+      if (_recipientId != null) _ensureDataLoadedThenFetch(_recipientId!);
     }
   }
 
-  String _getSelectedReasonName() {
-    if (_selectedReasonId == null) return '';
-    final reason = _rawReasons.firstWhere(
-          (r) => r['id'] == _selectedReasonId,
-      orElse: () => {},
-    );
-    return (reason['reason_name'] as String? ?? '').toLowerCase();
-  }
-
-  Future<void> _ensureDataLoadedThenFetch(int id) async {
-    while (_reasonsLoading && mounted) {
-      await Future.delayed(const Duration(milliseconds: 100));
-    }
-    if (mounted) {
-      await _fetchRecipientDetails(id);
-    }
-  }
-
-  double calculateGST(double amount) {
-    double taxable = 0;
-    if (amount <= 25000) {
-      taxable = 250;
-    } else if (amount <= 100000) {
-      taxable = amount * 0.01;
-    } else if (amount <= 1000000) {
-      taxable = (100000 * 0.01) + ((amount - 100000) * 0.005);
-    } else {
-      taxable = (100000 * 0.01) +
-          (900000 * 0.005) +
-          ((amount - 1000000) * 0.0001);
-    }
-    return taxable * 0.18;
-  }
-
-  double _calculateExactTcs(double totalAmount, double rate, {double fee = 23.0}) {
-    if (totalAmount <= 1000000) return 0.0;
-    final double afterService = totalAmount - fee;
-    final double gst = calculateGST(afterService);
-    final double netAfterGst = afterService - gst;
-    if (netAfterGst > 1000000) {
-      return (netAfterGst - 1000000) * rate;
-    }
+  double _toDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0.0;
     return 0.0;
   }
 
-  double _resolveTcsRate() {
-    if (_educationLoan == 'yes') return _kTcsRateNone;
-
-    final name = _getSelectedReasonName();
-    if (name.isEmpty) return _kTcsRateEducationMedical;
-
-    final isEducation = name.contains('tution') ||
-        name.contains('tuition') ||
-        name.contains('education') ||
-        name.contains('school') ||
-        name.contains('university') ||
-        name.contains('study') ||
-        name.contains('accomodation') ||
-        name.contains('accommodation') ||
-        name.contains('living cost');
-
-    final isMedical = name.contains('medical') ||
-        name.contains('medicine') ||
-        name.contains('hospital') ||
-        name.contains('treatment') ||
-        name.contains('health');
-
-    if (isEducation || isMedical) return _kTcsRateEducationMedical;
-
-    return _kTcsRateOther;
+  Future<void> _ensureDataLoadedThenFetch(int id) async {
+    while (_reasonsLoading && mounted) await Future.delayed(const Duration(milliseconds: 100));
+    if (mounted) await _fetchRecipientDetails(id);
   }
 
   Future<void> _fetchRecipientDetails(int id) async {
@@ -463,69 +303,30 @@ class _UpdateDeliveryMethodScreenState extends State<UpdateDeliveryMethodScreen>
       final recipient = await TransactionApi.fetchRecipientById(id, _transactionId ?? 0);
       final data = recipient['delivery'] ?? recipient;
       final transactionData = recipient['transaction'];
-      final transactionMainId = transactionData?['id'];
-
-      debugPrint('FETCHED RECIPIENT DATA FOR UPDATE: $data');
-
-      setState(() {
-
-        _transactionId =
-            int.tryParse(transactionMainId?.toString() ?? '');
-        _fetchedTransactionId = int.tryParse(data['transaction_id']?.toString() ?? '');
-        _nameController.text = data['name']?.toString() ?? '';
-        _addressController.text = data['address']?.toString().replaceAll('\\', '')?? '';
-        _accountNumberController.text = data['bank_account']?.toString() ?? '';
-        _beneficiaryBankNameController.text = data['bank_name']?.toString() ?? '';
-        _beneficiaryBankBranchController.text = data['bank_branch']?.toString() ?? '';
-        _beneficiaryBankAddressController.text = data['bank_address']?.toString() ?? '';
-        _swiftCodeController.text = data['swift_code']?.toString() ?? data['ifsc']?.toString() ?? '';
-        _selectedRelationship = data['relationship']?.toString();
-        _selectedReasonId = int.tryParse(data['reason']?.toString() ?? '');
-        _selectedCountryId = int.tryParse(data['country_id']?.toString() ?? '');
-        _emailController.text = data['email']?.toString() ?? '';
-        _mobileController.text = data['full_mobile']?.toString() ?? '';
-
-        if (_selectedCountryId != null) {
-          _fetchUniversities(_selectedCountryId!);
-        }
-
-        _educationLoan = (data['education_loan'] == '1' || data['education_loan'] == 'yes') ? 'yes' : 'no';
-        _existingDocuments['sanction_letter'] = data['settlefileupload'] != null && data['settlefileupload'].toString().isNotEmpty;
-
-        _isDataFetching = false;
-      });
-    } catch (e) {
-      debugPrint('Error fetching recipient: $e');
-      setState(() => _isDataFetching = false);
-    }
-  }
-
-  Future<void> _fetchCountries() async {
-    try {
-      final result = await ApiService.getCountries();
-      if (!mounted) return;
-      setState(() {
-        _countries = List<Map<String, dynamic>>.from(result);
-        _countriesLoading = false;
-      });
-    } catch (e) {
-      if (mounted) setState(() => _countriesLoading = false);
-    }
-  }
-
-  Future<void> _fetchUniversities(int countryId) async {
-    final cfg = _currentConfig;
-    if (cfg == null || !cfg.showUniversityPicker) return;
-    setState(() => _universitiesLoading = true);
-    try {
-      final result = await ApiService.getUniversitiesByCountry(countryId);
-      if (!mounted) return;
-      setState(() {
-        _universities = result;
-        _universitiesLoading = false;
-      });
-    } catch (e) {
-      if (mounted) setState(() => _universitiesLoading = false);
+      
+      if (mounted) {
+        setState(() {
+          _transactionId = int.tryParse(transactionData?['id']?.toString() ?? '');
+          _fetchedTransactionId = int.tryParse(data['transaction_id']?.toString() ?? '');
+          _nameController.text = data['name']?.toString() ?? '';
+          _addressController.text = data['address']?.toString().replaceAll('\\', '') ?? '';
+          _accountNumberController.text = data['bank_account']?.toString() ?? '';
+          _beneficiaryBankNameController.text = data['bank_name']?.toString() ?? '';
+          _beneficiaryBankBranchController.text = data['bank_branch']?.toString() ?? '';
+          _beneficiaryBankAddressController.text = data['bank_address']?.toString() ?? '';
+          _swiftCodeController.text = data['swift_code']?.toString() ?? data['ifsc']?.toString() ?? '';
+          _selectedRelationship = data['relationship']?.toString();
+          _selectedReasonId = int.tryParse(data['reason']?.toString() ?? '');
+          _selectedCountryId = int.tryParse(data['country_id']?.toString() ?? '');
+          _emailController.text = data['email']?.toString() ?? '';
+          _mobileController.text = data['full_mobile']?.toString() ?? '';
+          _educationLoan = (data['education_loan'] == '1' || data['education_loan'] == 'yes') ? 'yes' : 'no';
+          _existingDocuments['sanction_letter'] = data['settlefileupload'] != null && data['settlefileupload'].toString().isNotEmpty;
+          _isDataFetching = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isDataFetching = false);
     }
   }
 
@@ -538,390 +339,243 @@ class _UpdateDeliveryMethodScreenState extends State<UpdateDeliveryMethodScreen>
         final cfg = ReasonConfig.fromLegacyJson(r);
         configs[cfg.id] = cfg;
       }
-      if (!mounted) return;
-      setState(() {
-        _rawReasons = raw;
-        _reasonConfigs.addAll(configs);
-        _reasonsLoading = false;
-      });
-    } catch (e) {
+      if (mounted) setState(() { _rawReasons = raw; _reasonConfigs.addAll(configs); _reasonsLoading = false; });
+    } catch (_) {
       if (mounted) setState(() => _reasonsLoading = false);
+    }
+  }
+
+  Future<void> _fetchCountries() async {
+    try {
+      final result = await ApiService.getCountries();
+      if (mounted) setState(() { _countries = List<Map<String, dynamic>>.from(result); _countriesLoading = false; });
+    } catch (_) {
+      if (mounted) setState(() => _countriesLoading = false);
     }
   }
 
   void _onReasonSelected(int? value) {
     if (value == null) return;
-
     final cfg = _reasonConfigs[value];
     if (cfg != null && cfg.appReasonContent != null && cfg.appReasonContent!.isNotEmpty) {
-      _showReasonDialog(cfg);
-    } else {
-      _applyReason(value);
-    }
-  }
-
-  void _applyReason(int value) {
-    setState(() {
-      _selectedReasonId = value;
-      _selectedRelationship = null;
-      _pickedFiles.clear();
-      _educationLoan = null;
-      if (_getSelectedReasonName().contains('emigration')) _selectedRelationship = 'Self';
-    });
-    if (_selectedCountryId != null) _fetchUniversities(_selectedCountryId!);
-    _checkSelfRemittance();
-  }
-
-  Future<void> _checkSelfRemittance() async {
-    if (_selectedReasonId == null || _userId == null) return;
-
-    try {
-      final result = await ApiService.checkSelfRemittance(
-        reasonId: _selectedReasonId!,
-        name: _nameController.text.trim(),
-        customerId: _userId!,
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          title: Text(cfg.reasonName, style: const TextStyle(fontFamily: _font, fontWeight: FontWeight.w800)),
+          content: SingleChildScrollView(child: Text(cfg.appReasonContent!, style: const TextStyle(fontFamily: _font, height: 1.5))),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel', style: TextStyle(fontFamily: _font, color: Colors.grey))),
+            TextButton(
+              onPressed: () { Navigator.pop(ctx); setState(() { _selectedReasonId = value; _selectedRelationship = null; _pickedFiles.clear(); }); },
+              child: const Text('Agree', style: TextStyle(fontFamily: _font, fontWeight: FontWeight.w800, color: _navy)),
+            ),
+          ],
+        ),
       );
-
-      if (!mounted) return;
-
-      if (result['success'] == false) {
-        AppSnackbar.show(
-          context,
-          result['message'] ?? 'Self-remittance is not allowed for the selected reason.',
-          success: false,
-        );
-      }
-    } catch (e) {
-      debugPrint('Error checking self remittance: $e');
+    } else {
+      setState(() { _selectedReasonId = value; _selectedRelationship = null; _pickedFiles.clear(); });
     }
-  }
-
-  void _showReasonDialog(ReasonConfig cfg) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                  decoration: const BoxDecoration(
-                    color: AppTheme.PrimaryColor,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                  ),
-                  child: Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.info_outline_rounded, color: Colors.white, size: 32),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        cfg.reasonName,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontFamily: 'Satoshi', fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white),
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 10),
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 280),
-                    child: Scrollbar(
-                      thumbVisibility: true,
-                      child: SingleChildScrollView(
-                        child: Text(
-                          cfg.appReasonContent ?? '',
-                          style: const TextStyle(fontFamily: 'Satoshi', fontSize: 15, height: 1.7, color: Colors.black87),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const Divider(height: 1),
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.pop(context),
-                          style: OutlinedButton.styleFrom(
-                            minimumSize: const Size.fromHeight(50),
-                            side: BorderSide(color: Colors.grey.shade300),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                          ),
-                          child: const Text('Cancel', style: TextStyle(fontFamily: 'Satoshi', fontWeight: FontWeight.w600, color: Colors.black87)),
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            _applyReason(cfg.id);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            elevation: 0,
-                            backgroundColor: AppTheme.PrimaryColor,
-                            minimumSize: const Size.fromHeight(50),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                          ),
-                          child: const Text('I Agree', style: TextStyle(fontFamily: 'Satoshi', fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
   }
 
   bool get _isButtonEnabled {
+    if (_selectedReasonId == null) return false;
     final cfg = _currentConfig;
     if (cfg == null) return false;
-    if (_nameController.text.trim().isEmpty) return false;
-    if (_addressController.text.trim().isEmpty) return false;
-    if (_selectedCountryId == null) return false;
-    if (cfg.relationshipOptions.isNotEmpty && !cfg.relationshipFixed) {
-      if (_selectedRelationship == null || _selectedRelationship!.trim().isEmpty) return false;
-    }
     for (final doc in cfg.requiredDocuments) {
       if (doc.required && _pickedFiles[doc.key] == null && !(_existingDocuments[doc.key] ?? false)) return false;
     }
-    if (cfg.showEducationLoanToggle) {
-      if (_educationLoan == null) return false;
-      if (_educationLoan == 'yes' && _pickedFiles['sanction_letter'] == null && !(_existingDocuments['sanction_letter'] ?? false)) return false;
-    }
-    if (_beneficiaryBankNameController.text.trim().isEmpty) return false;
-    if (_accountNumberController.text.trim().isEmpty) return false;
-    if (_swiftCodeController.text.trim().isEmpty) return false;
+    if (cfg.showEducationLoanToggle && _educationLoan == 'yes' && _pickedFiles['sanction_letter'] == null && !(_existingDocuments['sanction_letter'] ?? false)) return false;
     return true;
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isDataFetching) {
-      return const Scaffold(backgroundColor: Colors.white, body: Center(child: LoadingOverlay()));
-    }
-
+    if (_isDataFetching) return const Scaffold(backgroundColor: _bg, body: Center(child: CustomLoadingIndicator()));
     final cfg = _currentConfig;
+    int i = 0;
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: const AppPrimaryAppBar(title: 'Update Recipient'),
+      backgroundColor: _bg,
+      appBar: AppBar(
+        backgroundColor: _bg,
+        elevation: 0,
+        centerTitle: false,
+        leading: IconButton(icon: const Icon(Icons.arrow_back_ios_new_rounded, color: _ink, size: 20), onPressed: () => Navigator.pop(context)),
+        title: const Text('Update Transfer', style: TextStyle(fontFamily: _font, fontSize: 22, fontWeight: FontWeight.w800, color: _ink, letterSpacing: -0.5)),
+      ),
       body: Stack(
         children: [
           SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             child: Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Recipient Information', style: TextStyle(fontFamily: 'Satoshi', fontSize: 24, fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 8),
-                  const Text('Update the purpose and documents for this transfer.', style: TextStyle(fontFamily: 'Satoshi', fontSize: 14, color: Colors.black54)),
-                  const SizedBox(height: 32),
-
-                  _reasonsLoading
-                      ? const Center(child: CustomLoadingIndicator())
-                      : _buildDropdownField<int>(
-                    label: 'Reason for Transfer',
-                    subLabel: 'You can\'t transfer amount to your own account other than education living cost purpose',
-                    value: _selectedReasonId,
-                    items: _rawReasons.map((r) => DropdownMenuItem<int>(value: r['id'], child: Text(r['reason_name']))).toList(),
-                    onChanged: _onReasonSelected,
-                  ),
-                  const SizedBox(height: 20),
-
-
-                  if (cfg != null) ...[
-                    if (_sendAmount >= 1000000) ...[
-                      _buildTcsBanner(),
-                      const SizedBox(height: 16),
-                    ],
-                    if (cfg.showNostroWarning) ...[
-                      const Text('Nostro charges will be applicable', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontFamily: 'Satoshi')),
-                      const SizedBox(height: 12),
-                    ],
-
-                    ...cfg.requiredDocuments.map((doc) => _buildFileUploadTile(
-                      label: doc.label + (doc.required ? ' *' : ' (Optional)'),
-                      file: _pickedFiles[doc.key],
-                      hasExisting: _existingDocuments[doc.key] ?? false,
-                      onTap: () async {
-                        final result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png']);
-                        if (result != null && result.files.isNotEmpty) setState(() => _pickedFiles[doc.key] = result.files.first);
-                      },
-                    )),
-
-                    if (cfg.showEducationLoanToggle) ...[
-                      const Text('Is this for an Education Loan? *', style: TextStyle(fontFamily: 'Satoshi', fontSize: 14, fontWeight: FontWeight.w500)),
-                      Row(children: [
-                        Radio<String>(value: 'yes', groupValue: _educationLoan, activeColor: AppTheme.PrimaryColor, onChanged: (v) => setState(() => _educationLoan = v)),
-                        const Text('Yes', style: TextStyle(fontFamily: 'Satoshi')),
-                        const SizedBox(width: 24),
-                        Radio<String>(value: 'no', groupValue: _educationLoan, activeColor: AppTheme.PrimaryColor, onChanged: (v) => setState(() => _educationLoan = v)),
-                        const Text('No', style: TextStyle(fontFamily: 'Satoshi')),
-                      ]),
-                      if (_educationLoan == 'yes')
-                        _buildFileUploadTile(
-                          label: 'Sanction Letter *',
-                          file: _pickedFiles['sanction_letter'],
-                          hasExisting: _existingDocuments['sanction_letter'] ?? false,
-                          onTap: () async {
-                            final result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png']);
-                            if (result != null && result.files.isNotEmpty) setState(() => _pickedFiles['sanction_letter'] = result.files.first);
-                          },
-                        ),
-                      const SizedBox(height: 20),
-                    ],
-
-                    if (cfg.relationshipOptions.isNotEmpty && !cfg.relationshipFixed) ...[
-                      _buildDropdownField<String>(
-                        label: 'Your relationship to recipient',
-                        value: _selectedRelationship,
-                        items: cfg.relationshipOptions.map((rel) => DropdownMenuItem<String>(value: rel, child: Text(rel))).toList(),
-                        onChanged: (val) => setState(() => _selectedRelationship = val),
+                  _FadeSlide(index: i++, child: const Text('Transfer Purpose', style: TextStyle(fontFamily: _font, fontSize: 18, fontWeight: FontWeight.w800, color: _ink))),
+                  const SizedBox(height: 12),
+                  _FadeSlide(
+                    index: i++,
+                    child: _buildWhiteCard(
+                      child: Column(
+                        children: [
+                          _buildDropdownField<int>(
+                            label: 'Reason for Transfer',
+                            value: _selectedReasonId,
+                            items: _rawReasons.map((r) => DropdownMenuItem<int>(value: r['id'], child: Text(r['reason_name']))).toList(),
+                            onChanged: _onReasonSelected,
+                          ),
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(color: Colors.red.withOpacity(0.08), borderRadius: BorderRadius.circular(14)),
+                            child: const Row(
+                              children: [
+                                Icon(Icons.info_outline_rounded, color: Colors.redAccent, size: 18),
+                                SizedBox(width: 10),
+                                Expanded(child: Text('Note: Transfers to personal accounts are restricted to Education/Living Cost only.', style: TextStyle(fontFamily: _font, fontSize: 12, fontWeight: FontWeight.w700, color: Colors.redAccent))),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 20),
-                    ],
-
-                    AppTextField(controller: _nameController, labelText: cfg.nameLabel, enabled: false),
-                    const SizedBox(height: 16),
-                    AppTextField(controller: _addressController, labelText: cfg.addressLabel, enabled: false),
-                    const SizedBox(height: 16),
-
-                    _buildDropdownField<int>(
-                      label: 'Country',
-                      value: _selectedCountryId,
-                      items: _countries.map((c) => DropdownMenuItem<int>(value: c['id'], child: Text(c['name'] ?? ''))).toList(),
-                      onChanged: null,
                     ),
-                    const SizedBox(height: 16),
-
-                    AppTextField(controller: _mobileController, labelText: cfg.mobileLabel, enabled: false),
-                    const SizedBox(height: 16),
-                    AppTextField(controller: _emailController, labelText: cfg.emailLabel, enabled: false),
-                    const SizedBox(height: 16),
-
-                    AppTextField(controller: _beneficiaryBankNameController, labelText: cfg.bankNameLabel, enabled: false),
-                    const SizedBox(height: 16),
-                    AppTextField(controller: _accountNumberController, labelText: 'Account Number', enabled: false),
-                    const SizedBox(height: 16),
-                    AppTextField(controller: _swiftCodeController, labelText: 'SWIFT / IFSC Code', enabled: false),
-                  ],
-
-                  const SizedBox(height: 48),
-                  AppPrimaryButton(
-                    title: 'Update Details',
-                    loading: _isSubmitting,
-                    onPressed: _isButtonEnabled && !_isSubmitting ? _handleUpdate : null,
                   ),
-                  const SizedBox(height: 24),
+                  if (cfg != null) ...[
+                    const SizedBox(height: 24),
+                    _FadeSlide(index: i++, child: const Text('Required Documents', style: TextStyle(fontFamily: _font, fontSize: 18, fontWeight: FontWeight.w800, color: _ink))),
+                    const SizedBox(height: 12),
+                    _FadeSlide(
+                      index: i++,
+                      child: _buildWhiteCard(
+                        child: Column(
+                          children: [
+                            if (cfg.showEducationLoanToggle) ...[
+                              const Text('Is this for an Education Loan? *', style: TextStyle(fontFamily: _font, fontSize: 14, fontWeight: FontWeight.w800, color: _ink)),
+                              const SizedBox(height: 12),
+                              Row(children: [
+                                _buildRadioTile('Yes', 'yes', _educationLoan, (v) => setState(() => _educationLoan = v)),
+                                const SizedBox(width: 16),
+                                _buildRadioTile('No', 'no', _educationLoan, (v) => setState(() => _educationLoan = v)),
+                              ]),
+                              const SizedBox(height: 20),
+                              if (_educationLoan == 'yes')
+                                _buildFileUploadTile(
+                                  label: 'Sanction Letter *',
+                                  file: _pickedFiles['sanction_letter'],
+                                  hasExisting: _existingDocuments['sanction_letter'] ?? false,
+                                  onTap: () async {
+                                    final res = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['pdf', 'jpg', 'png']);
+                                    if (res != null) setState(() => _pickedFiles['sanction_letter'] = res.files.first);
+                                  },
+                                ),
+                            ],
+                            ...cfg.requiredDocuments.map((doc) => _buildFileUploadTile(
+                              label: '${doc.label}${doc.required ? ' *' : ''}',
+                              file: _pickedFiles[doc.key],
+                              hasExisting: _existingDocuments[doc.key] ?? false,
+                              onTap: () async {
+                                final res = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['pdf', 'jpg', 'png']);
+                                if (res != null) setState(() => _pickedFiles[doc.key] = res.files.first);
+                              },
+                            )),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    _FadeSlide(index: i++, child: const Text('Beneficiary Info (Read-only)', style: TextStyle(fontFamily: _font, fontSize: 18, fontWeight: FontWeight.w800, color: _ink))),
+                    const SizedBox(height: 12),
+                    _FadeSlide(
+                      index: i++,
+                      child: _buildWhiteCard(
+                        child: Column(
+                          children: [
+                            AppTextField(controller: _nameController, labelText: cfg.nameLabel, enabled: false),
+                            const SizedBox(height: 16),
+                            AppTextField(controller: _beneficiaryBankNameController, labelText: 'Bank Name', enabled: false),
+                            const SizedBox(height: 16),
+                            AppTextField(controller: _accountNumberController, labelText: 'Account Number', enabled: false),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 32),
+                  _FadeSlide(
+                    index: i++,
+                    child: _Pressable(
+                      onTap: _isButtonEnabled && !_isSubmitting ? _handleUpdate : null,
+                      child: Container(
+                        width: double.infinity,
+                        height: 56,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: _isButtonEnabled ? _navy : Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(30),
+                          boxShadow: _isButtonEnabled ? [BoxShadow(color: _navy.withOpacity(0.2), blurRadius: 12, offset: const Offset(0, 6))] : [],
+                        ),
+                        child: _isSubmitting 
+                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
+                          : const Text('Update & Continue', style: TextStyle(fontFamily: _font, fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 30),
                 ],
               ),
             ),
           ),
-          if (_isSubmitting) const LoadingOverlay(),
+          if (_isSubmitting) Container(color: Colors.black.withOpacity(0.2), child: const Center(child: CustomLoadingIndicator())),
         ],
       ),
     );
   }
 
-  Widget _buildTcsBanner() {
-    final color = _tcsBannerColor;
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.35)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(_tcsIcon, size: 20, color: color),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Tax Collected at Source (TCS)',
-                  style: TextStyle(
-                    fontFamily: 'Satoshi',
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: color.withOpacity(0.75),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  _tcsLabel,
-                  style: TextStyle(
-                    fontFamily: 'Satoshi',
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: color,
-                  ),
-                ),
-              ],
-            ),
+  Widget _buildWhiteCard({required Widget child}) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(22),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(28), boxShadow: [BoxShadow(color: _navy.withOpacity(0.05), blurRadius: 14, offset: const Offset(0, 6))]),
+        child: child,
+      );
+
+  Widget _buildRadioTile(String label, String value, String? group, Function(String?) onChanged) {
+    final selected = group == value;
+    return Expanded(
+      child: _Pressable(
+        onTap: () => onChanged(value),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: selected ? _navy.withOpacity(0.08) : _bg,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: selected ? _navy : Colors.transparent, width: 1.5),
           ),
-        ],
+          alignment: Alignment.center,
+          child: Text(label, style: TextStyle(fontFamily: _font, fontSize: 14, fontWeight: FontWeight.w800, color: selected ? _navy : Colors.grey.shade600)),
+        ),
       ),
     );
   }
 
-  Widget _buildDropdownField<T>({required String label, String? subLabel, required T? value, required List<DropdownMenuItem<T>> items, required void Function(T?)? onChanged}) {
+  Widget _buildDropdownField<T>({required String label, required T? value, required List<DropdownMenuItem<T>> items, required Function(T?) onChanged}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontFamily: 'Satoshi', fontSize: 14, fontWeight: FontWeight.w600)),
-        if (subLabel != null) ...[
-          const SizedBox(height: 4),
-          Text(
-            subLabel,
-            style: const TextStyle(
-              fontSize: 14,
-              fontFamily: 'Satoshi',
-              color: Colors.redAccent,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
+        Text(label, style: const TextStyle(fontFamily: _font, fontSize: 13, fontWeight: FontWeight.w800, color: Colors.grey, letterSpacing: 0.5)),
         const SizedBox(height: 8),
-        DropdownButtonFormField<T>(
-          value: value, items: items, onChanged: onChanged,
-          validator: (val) => val == null ? 'Required' : null,
-          style: TextStyle(fontFamily: 'Satoshi', color: onChanged == null ? Colors.grey : AppTheme.TextColor),
-          decoration: InputDecoration(
-            filled: true, fillColor: onChanged == null ? Colors.grey[100] : Colors.grey[50],
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
-            enabled: onChanged != null,
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          decoration: BoxDecoration(color: _bg, borderRadius: BorderRadius.circular(16)),
+          child: DropdownButtonFormField<T>(
+            dropdownColor: Colors.white,
+            value: value,
+            items: items,
+            onChanged: onChanged,
+            style: const TextStyle(fontFamily: _font, fontSize: 15, color: _ink, fontWeight: FontWeight.w700),
+            decoration: const InputDecoration(contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 16), border: InputBorder.none),
           ),
         ),
       ],
@@ -929,91 +583,119 @@ class _UpdateDeliveryMethodScreenState extends State<UpdateDeliveryMethodScreen>
   }
 
   Widget _buildFileUploadTile({required String label, PlatformFile? file, bool hasExisting = false, required VoidCallback onTap}) {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(label, style: const TextStyle(fontFamily: 'Satoshi', fontSize: 14, fontWeight: FontWeight.w500)),
-      const SizedBox(height: 8),
-      GestureDetector(
+    final bool hasFile = file != null;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: _Pressable(
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.all(16),
-          margin: const EdgeInsets.only(bottom: 16),
-          decoration: BoxDecoration(color: Colors.grey[50], borderRadius: BorderRadius.circular(12), border: Border.all(color: file == null && !hasExisting ? Colors.grey[300]! : AppTheme.PrimaryColor)),
-          child: Row(children: [
-            Icon(file == null && !hasExisting ? Icons.cloud_upload_outlined : Icons.check_circle, color: file == null && !hasExisting ? Colors.grey : AppTheme.PrimaryColor),
-            const SizedBox(width: 12),
-            Expanded(child: Text(file != null ? file.name : (hasExisting ? 'Document already uploaded' : 'Tap to upload document'), style: TextStyle(fontFamily: 'Satoshi', color: file == null && !hasExisting ? Colors.grey : AppTheme.TextColor), overflow: TextOverflow.ellipsis)),
-            const Icon(Icons.edit, size: 18, color: Colors.grey),
-          ]),
+          decoration: BoxDecoration(
+            color: (hasFile || hasExisting) ? const Color(0xFFE5F8E0) : _bg,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: (hasFile || hasExisting) ? const Color(0xFFBFEAB8) : Colors.transparent),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
+                child: Icon((hasFile || hasExisting) ? Icons.check_circle_rounded : Icons.cloud_upload_rounded, color: (hasFile || hasExisting) ? const Color(0xFF0F7B4F) : _navy, size: 22),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(label, style: const TextStyle(fontFamily: _font, fontSize: 12, fontWeight: FontWeight.w700, color: _ink)),
+                    if (hasFile || hasExisting) Text(hasFile ? file.name : 'Document already uploaded', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: _font, fontSize: 11, color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+              const Icon(Icons.edit_rounded, size: 18, color: Colors.grey),
+            ],
+          ),
         ),
       ),
-    ]);
+    );
   }
 
   Future<void> _handleUpdate() async {
-    if (!_formKey.currentState!.validate()) return;
     setState(() => _isSubmitting = true);
-
     try {
       final updateData = {
         'transaction_id': _transactionId,
         'id': _recipientId,
-        'name': _nameController.text.trim(),
+        'name': _nameController.text,
         'delivery_method': 'bank',
         'reason': _selectedReasonId,
         'relationship': _selectedRelationship,
         'education_loan': _educationLoan == 'yes' ? '1' : '2',
         'country_id': _selectedCountryId,
-        'email': _emailController.text.trim(),
-        'bank_mobile': _mobileController.text.trim(),
-        'bank_name': _beneficiaryBankNameController.text.trim(),
-        'bank_account': _accountNumberController.text.trim(),
-        'ifsc': _swiftCodeController.text.trim(),
-        'bank_address': _beneficiaryBankAddressController.text.trim(),
+        'email': _emailController.text,
+        'bank_mobile': _mobileController.text,
+        'bank_name': _beneficiaryBankNameController.text,
+        'bank_account': _accountNumberController.text,
+        'ifsc': _swiftCodeController.text,
+        'bank_address': _beneficiaryBankAddressController.text,
       };
-
-      final response = await TransactionApi.updateRecipient(
-        updateData,
-        _fetchedTransactionId!,
-        files: _pickedFiles,
-      );
-
+      final response = await TransactionApi.updateRecipient(updateData, _fetchedTransactionId!, files: _pickedFiles);
       if (mounted) {
-        final double rate = _resolveTcsRate();
-        final double calculatedTcs = _calculateExactTcs(_sendAmount, rate);
-
-        // Handle Nostro Charge consistency
-        double nostro = 0.0;
-        final name = _getSelectedReasonName();
-        if (name.contains('tuition') || name.contains('tution') || name.contains('education')) {
-          nostro = 1000.0;
-        }
-
-        final Map<String, dynamic> summaryArgs = {
-          ...response['data'] ?? {},
-          'reason': _currentConfig?.reasonName,
-          'reason_id': _selectedReasonId,
-          'tcs_rate': rate,
-          'tcs_percent': (rate * 100).toStringAsFixed(0),
-          'tcs_label': _tcsLabel,
-          'tcs_amount': calculatedTcs,
-          'nostro_charge': nostro,
-          'send_amount': _sendAmount,
-          'total_payable': _sendAmount + nostro,
-        };
-
-        AppSnackbar.show(context, 'Recipient updated successfully', success: true);
-        Navigator.pushReplacementNamed(
-          context,
-          '/payment-summary',
-          arguments: summaryArgs,
-        );
+        AppSnackbar.show(context, 'Details updated successfully', success: true);
+        Navigator.pushReplacementNamed(context, '/payment-summary', arguments: { ...response['data'] ?? {}, 'reason': _currentConfig?.reasonName, 'reason_id': _selectedReasonId });
       }
-    } catch (e) {
-      if (mounted) {
-        AppSnackbar.show(context, 'Error: $e', success: false);
-      }
+    } catch (_) {
+      if (mounted) AppSnackbar.show(context, 'Update failed. Please check your connection.', success: false);
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
+  }
+}
+
+class _FadeSlide extends StatelessWidget {
+  final Widget child;
+  final int index;
+  const _FadeSlide({required this.child, this.index = 0});
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: Duration(milliseconds: 400 + index * 80),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) => Opacity(
+        opacity: value.clamp(0.0, 1.0),
+        child: Transform.translate(offset: Offset(0, 20 * (1 - value)), child: child),
+      ),
+      child: child,
+    );
+  }
+}
+
+class _Pressable extends StatefulWidget {
+  final Widget child;
+  final VoidCallback? onTap;
+  const _Pressable({required this.child, this.onTap});
+  @override
+  State<_Pressable> createState() => _PressableState();
+}
+
+class _PressableState extends State<_Pressable> {
+  bool _down = false;
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) => setState(() => _down = true),
+      onTapCancel: () => setState(() => _down = false),
+      onTapUp: (_) => setState(() => _down = false),
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _down ? 0.97 : 1,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: widget.child,
+      ),
+    );
   }
 }

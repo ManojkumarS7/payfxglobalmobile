@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:payfxglobal/paystudy/core/constants/app_snackbar.dart';
 import 'package:payfxglobal/utils/app_theme.dart';
-import 'package:payfxglobal/widgets/custom_app_bar.dart';
-import 'package:payfxglobal/widgets/custom_button.dart';
 import 'package:payfxglobal/widgets/custom_loading_indicator.dart';
 import '../service/transaction_detail_service.dart';
 import '../view_model/transaction_detail_view_model.dart';
-
 
 class TransactionDetailScreen extends StatefulWidget {
   final dynamic transaction;
@@ -24,14 +22,19 @@ class TransactionDetailScreen extends StatefulWidget {
 class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   late TransactionDetailViewModel vm;
 
+  // ---- Palette (Matched with Dashboard) ----
+  static const Color _navy =  AppTheme.PrimaryColor;
+  static const Color _ink = Color(0xFF0B1B3A);
+  static const Color _accent = Color(0xFFFFC72C);
+  static const Color _bg = Color(0xFFF5F7FB);
+  static const String _font = 'Satoshi';
+
   @override
   void initState() {
     super.initState();
-
     vm = TransactionDetailViewModel(
       apiService: TransactionDetailApiService(),
     );
-
     vm.initializeTransaction(widget.transaction);
     vm.fetchPaymentDetails();
   }
@@ -39,36 +42,11 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   Future<void> _submitUtr() async {
     try {
       await vm.submitUtr();
-
       if (!mounted) return;
-
-      AppSnackbar.show(
-        context,
-        'UTR Submitted Successfully',
-        success: true,
-      );
+      AppSnackbar.show(context, 'UTR Submitted Successfully', success: true);
     } catch (e) {
       if (!mounted) return;
-
-      AppSnackbar.show(
-        context,
-        e.toString().replaceAll('Exception: ', ''),
-        success: false,
-      );
-    }
-  }
-
-  Future<void> _downloadFinalBill() async {
-    try {
-      await vm.downloadFinalBill();
-    } catch (e) {
-      if (!mounted) return;
-
-      AppSnackbar.show(
-        context,
-        'Failed to download receipt',
-        success: false,
-      );
+      AppSnackbar.show(context, e.toString().replaceAll('Exception: ', ''), success: false);
     }
   }
 
@@ -85,46 +63,34 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
       builder: (context, _) {
         if (vm.isLoadingDetails) {
           return const Scaffold(
-            backgroundColor: Colors.white,
-            appBar: AppPrimaryAppBar(
-              title: 'Transaction Details',
-            ),
-            body: Center(
-              child: CustomLoadingIndicator(),
-            ),
+            backgroundColor: _bg,
+            body: Center(child: CustomLoadingIndicator()),
           );
         }
 
         if (vm.detailsError != null) {
           return Scaffold(
-            backgroundColor: Colors.white,
-            appBar: const AppPrimaryAppBar(
-              title: 'Transaction Details',
-            ),
+            backgroundColor: _bg,
+            appBar: _buildAppBar(),
             body: Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 64,
-                      color: AppTheme.errorColor,
-                    ),
+                    const Icon(Icons.error_outline_rounded, size: 64, color: Colors.redAccent),
                     const SizedBox(height: 16),
-                    Text(
-                      'Something went wrong,please try again later'!,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontFamily: 'Satoshi',
-                        fontSize: 16,
-                      ),
-                    ),
+                    const Text('Something went wrong, please try again.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontFamily: _font, fontSize: 16, color: _ink, fontWeight: FontWeight.w600)),
                     const SizedBox(height: 24),
-                    AppPrimaryButton(
-                      title: 'Retry',
-                      onPressed: vm.fetchPaymentDetails,
+                    _Pressable(
+                      onTap: vm.fetchPaymentDetails,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                        decoration: BoxDecoration(color: _navy, borderRadius: BorderRadius.circular(30)),
+                        child: const Text('Retry', style: TextStyle(fontFamily: _font, color: Colors.white, fontWeight: FontWeight.w800)),
+                      ),
                     ),
                   ],
                 ),
@@ -133,83 +99,57 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
           );
         }
 
+        int i = 0;
         return Scaffold(
-          backgroundColor: AppTheme.backgroundColor,
-          appBar: const AppPrimaryAppBar(
-            title: 'Transaction Details',
-          ),
+          backgroundColor: _bg,
+          appBar: _buildAppBar(),
           body: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildStatusCard(),
-
+                _FadeSlide(index: i++, child: _buildStatusCard()),
                 const SizedBox(height: 24),
-
-                _buildTransactionSummary(),
-
+                _FadeSlide(index: i++, child: _buildTransactionSummary()),
                 const SizedBox(height: 24),
-
-                _buildDetailSection(
+                _FadeSlide(index: i++, child: _buildDetailSection(
                   title: 'Sender Details',
-                  icon: Icons.person_outline,
+                  icon: Icons.person_rounded,
                   children: [
                     _infoTile('Name', vm.sender['name'] ?? '-'),
-                    _infoTile(
-                      'Account Number',
-                      vm.sender['account_number'] ?? '-',
-                    ),
+                    _infoTile('Account Number', vm.sender['account_number'] ?? '-'),
                   ],
-                ),
-
-                const SizedBox(height: 16),
-
-                _buildDetailSection(
+                )),
+                const SizedBox(height: 20),
+                _FadeSlide(index: i++, child: _buildDetailSection(
                   title: 'Beneficiary Details',
-                  icon: Icons.account_balance_outlined,
+                  icon: Icons.account_balance_rounded,
                   children: [
-                    _infoTile(
-                      'Beneficiary Name',
-                      vm.receiver['name'] ?? '-',
-                    ),
-                    _infoTile(
-                      'Bank Name',
-                      vm.receiver['bank_name'] ?? '-',
-                    ),
-                    _infoTile(
-                      'Bank Account Number',
-                      vm.receiver['account_number'] ?? '-',
-                    ),
+                    _infoTile('Beneficiary Name', vm.receiver['name'] ?? '-'),
+                    _infoTile('Bank Name', vm.receiver['bank_name'] ?? '-'),
+                    _infoTile('Account Number', vm.receiver['account_number'] ?? '-'),
                     if ((vm.receiver['swift_code']?.toString() ?? '').isNotEmpty)
-                      _infoTile(
-                        'SWIFT Code',
-                        vm.receiver['swift_code'].toString(),
-                      ),
+                      _infoTile('SWIFT Code', vm.receiver['swift_code'].toString()),
                     if ((vm.receiver['country']?.toString() ?? '').isNotEmpty)
-                      _infoTile(
-                        'Country',
-                        vm.receiver['country'].toString(),
-                      ),
+                      _infoTile('Country', vm.receiver['country'].toString()),
                   ],
-                ),
-
+                )),
                 const SizedBox(height: 24),
-                _showText(),
-                const SizedBox(height: 10),
-                _buildDownloadButtonInstruction(vm.isSuccess, vm.isSettled),
-                const SizedBox(height: 18),
-
                 if (vm.existingUtr != null)
-                  _buildSubmittedUtrCard()
+                  _FadeSlide(index: i++, child: _buildSubmittedUtrCard())
                 else if (vm.showUtrInput)
-                  _buildUtrSection(),
+                  _FadeSlide(index: i++, child: _buildUtrSection()),
+                
+                if (vm.isOffline && vm.existingUtr == null) ...[
+                   const SizedBox(height: 24),
+                   _FadeSlide(index: i++, child: _buildOfflineInstructions()),
+                ],
 
-                const SizedBox(height: 30),
-
-                // _buildDownloadButton(),
-
-                _showUtrText()
+                if (vm.showDownloadButton) ...[
+                   const SizedBox(height: 24),
+                   _FadeSlide(index: i++, child: _buildReceiptNotice()),
+                ],
               ],
             ),
           ),
@@ -218,6 +158,21 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     );
   }
 
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: _bg,
+      elevation: 0,
+      centerTitle: false,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_ios_new_rounded, color: _ink, size: 20),
+        onPressed: () => Navigator.pop(context),
+      ),
+      title: const Text(
+        'Details',
+        style: TextStyle(fontFamily: _font, fontSize: 22, fontWeight: FontWeight.w800, color: _ink, letterSpacing: -0.5),
+      ),
+    );
+  }
 
   Widget _buildStatusCard() {
     return Container(
@@ -225,90 +180,54 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: vm.statusColor.withOpacity(0.2),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: vm.statusColor.withOpacity(0.05),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [BoxShadow(color: _navy.withOpacity(0.06), blurRadius: 16, offset: const Offset(0, 8))],
       ),
       child: Column(
         children: [
-          Icon(
-            vm.isSuccess
-                ? Icons.check_circle_outline
-                : vm.isSettled
-                ? Icons.verified_rounded
-                : Icons.schedule_outlined,
-            color: vm.statusColor,
-            size: 48,
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: vm.statusColor.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              vm.isSuccess ? Icons.check_circle_rounded : vm.isSettled ? Icons.verified_rounded : Icons.schedule_rounded,
+              color: vm.statusColor,
+              size: 36,
+            ),
           ),
           const SizedBox(height: 16),
           Text(
             vm.statusLabel,
-            style: TextStyle(
-              fontFamily: 'Satoshi',
-              color: vm.statusColor,
-              fontWeight: FontWeight.w700,
-              fontSize: 24,
-            ),
+            style: TextStyle(fontFamily: _font, color: vm.statusColor, fontWeight: FontWeight.w800, fontSize: 24, letterSpacing: -0.5),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
                 'Ref: ${vm.referenceNumber}',
-                style: const TextStyle(
-                  fontFamily: 'Satoshi',
-                  color: Colors.black54,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: TextStyle(fontFamily: _font, color: Colors.grey.shade500, fontSize: 13, fontWeight: FontWeight.w600),
               ),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 6),
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 10),
+                width: 4,
+                height: 4,
+                decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.grey.shade300),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(color: _navy.withOpacity(0.08), borderRadius: BorderRadius.circular(20)),
                 child: Text(
-                  '•',
-                  style: TextStyle(color: Colors.black38),
+                  vm.paymentType.toUpperCase(),
+                  style: const TextStyle(fontFamily: _font, color: _navy, fontWeight: FontWeight.w800, fontSize: 10),
                 ),
               ),
-              _paymentModeBadge(),
             ],
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _paymentModeBadge() {
-    final color = AppTheme.PrimaryColor;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 4,
-      ),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: color.withOpacity(0.3),
-        ),
-      ),
-      child: Text(
-        vm.paymentType.toUpperCase(),
-        style: TextStyle(
-          fontFamily: 'Satoshi',
-          color: color,
-          fontWeight: FontWeight.w700,
-          fontSize: 11,
-        ),
       ),
     );
   }
@@ -317,36 +236,21 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Colors.grey.shade200,
-        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [BoxShadow(color: _navy.withOpacity(0.05), blurRadius: 14, offset: const Offset(0, 6))],
       ),
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(
-                color: AppTheme.PrimaryColor,
-              ),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(19),
-                topRight: Radius.circular(19),
-              ),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            decoration: const BoxDecoration(
+              border: Border(bottom: BorderSide(color: _bg, width: 2)),
             ),
             child: const Row(
               children: [
-                Text(
-                  'Transaction Summary',
-                  style: TextStyle(
-                    fontFamily: 'Satoshi',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black,
-                  ),
-                ),
+                Icon(Icons.summarize_rounded, color: _navy, size: 20),
+                SizedBox(width: 10),
+                Text('Transaction Summary', style: TextStyle(fontFamily: _font, fontSize: 16, fontWeight: FontWeight.w800, color: _ink)),
               ],
             ),
           ),
@@ -354,43 +258,20 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
-                _summaryRow(
-                  'Payment Mode',
-                  vm.paymentType.toUpperCase(),
-                ),
+                _summaryRow('Recipient gets', '${vm.recipientCurrency} ${vm.recipientAmount.toStringAsFixed(2)}'),
                 const SizedBox(height: 12),
-                _summaryRow(
-                  'Recipient gets',
-                  '${vm.recipientCurrency} ${vm.recipientAmount.toStringAsFixed(2)}',
-                ),
+                _summaryRow('Exchange rate', vm.exchangeRate > 0 ? vm.exchangeRate.toStringAsFixed(4) : '—'),
                 const SizedBox(height: 12),
-                _summaryRow(
-                  'Exchange rate',
-                  vm.exchangeRate > 0
-                      ? vm.exchangeRate.toStringAsFixed(4)
-                      : '—',
-                ),
+                _summaryRow('Service fee', '₹${vm.serviceFee.toStringAsFixed(2)}'),
                 const SizedBox(height: 12),
-                _summaryRow(
-                  'Service fee',
-                  '₹${vm.serviceFee.toStringAsFixed(2)}',
-                ),
+                _summaryRow('GST', '₹${vm.gstAmount.toStringAsFixed(2)}'),
                 const SizedBox(height: 12),
-                _summaryRow(
-                  'GST',
-                  '₹${vm.gstAmount.toStringAsFixed(2)}',
+                _summaryRow('TCS', '₹${vm.tcsAmount.toStringAsFixed(2)}'),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Divider(height: 1, color: _bg, thickness: 2),
                 ),
-                const SizedBox(height: 12),
-                _summaryRow(
-                  'TCS',
-                  '₹${vm.tcsAmount.toStringAsFixed(2)}',
-                ),
-                const Divider(height: 32),
-                _summaryRow(
-                  'Total Payable',
-                  '₹${vm.totalPayable.toStringAsFixed(2)}',
-                  isBold: true,
-                ),
+                _summaryRow('Total Payable', '₹${vm.totalPayable.toStringAsFixed(2)}', isBold: true),
               ],
             ),
           ),
@@ -399,70 +280,33 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     );
   }
 
-  Widget _summaryRow(
-      String label,
-      String value, {
-        bool isBold = false,
-      }) {
+  Widget _summaryRow(String label, String value, {bool isBold = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontFamily: 'Satoshi',
-            fontSize: 14,
-            fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
-            color: isBold ? Colors.black : Colors.black54,
-          ),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            fontFamily: 'Satoshi',
-            fontSize: 14,
-            fontWeight: isBold ? FontWeight.w800 : FontWeight.w600,
-            color: Colors.black,
-          ),
-        ),
+        Text(label, style: TextStyle(fontFamily: _font, fontSize: 14, fontWeight: isBold ? FontWeight.w800 : FontWeight.w600, color: isBold ? _ink : Colors.grey.shade600)),
+        Text(value, style: TextStyle(fontFamily: _font, fontSize: 15, fontWeight: FontWeight.w800, color: isBold ? _navy : _ink)),
       ],
     );
   }
 
-  Widget _buildDetailSection({
-    required String title,
-    required IconData icon,
-    required List<Widget> children,
-  }) {
+  Widget _buildDetailSection({required String title, required IconData icon, required List<Widget> children}) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Colors.grey.shade200,
-        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [BoxShadow(color: _navy.withOpacity(0.05), blurRadius: 14, offset: const Offset(0, 6))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
-                icon,
-                size: 20,
-                color: AppTheme.PrimaryColor,
-              ),
+              Icon(icon, size: 20, color: _navy),
               const SizedBox(width: 12),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontFamily: 'Satoshi',
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16,
-                ),
-              ),
+              Text(title, style: const TextStyle(fontFamily: _font, fontWeight: FontWeight.w800, fontSize: 16, color: _ink)),
             ],
           ),
           const SizedBox(height: 20),
@@ -472,49 +316,19 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     );
   }
 
-  Widget _infoTile(
-      String label,
-      String value,
-      ) {
+  Widget _infoTile(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(
-        bottom: 16,
-      ),
+      padding: const EdgeInsets.only(bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontFamily: 'Satoshi',
-              color: Colors.black54,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
+          Text(label, style: TextStyle(fontFamily: _font, color: Colors.grey.shade500, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
           const SizedBox(height: 6),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: Colors.grey.shade200,
-              ),
-            ),
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontFamily: 'Satoshi',
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.TextColor,
-              ),
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(color: _bg, borderRadius: BorderRadius.circular(16)),
+            child: Text(value, style: const TextStyle(fontFamily: _font, fontSize: 14, fontWeight: FontWeight.w700, color: _ink)),
           ),
         ],
       ),
@@ -524,42 +338,79 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   Widget _buildSubmittedUtrCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: Colors.green.shade50,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Colors.green.shade100,
-        ),
+        color: const Color(0xFFE5F8E0),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFBFEAB8)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Row(
             children: [
-              Icon(
-                Icons.check_circle,
-                color: Colors.green,
-                size: 20,
-              ),
+              Icon(Icons.check_circle_rounded, color: Color(0xFF0F7B4F), size: 20),
               SizedBox(width: 8),
-              Text(
-                'UTR Submitted',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green,
-                  fontFamily: 'Satoshi',
-                ),
-              ),
+              Text('UTR Submitted', style: TextStyle(fontFamily: _font, fontWeight: FontWeight.w800, color: Color(0xFF0F7B4F))),
             ],
           ),
+          const SizedBox(height: 12),
+          Text(vm.existingUtr!, style: const TextStyle(fontFamily: _font, fontSize: 20, fontWeight: FontWeight.w800, color: _ink, letterSpacing: 1)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUtrSection() {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF6E5),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFFFE0A3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Submit UTR Number', style: TextStyle(fontFamily: _font, fontWeight: FontWeight.w800, fontSize: 17, color: _ink)),
           const SizedBox(height: 8),
-          Text(
-            vm.existingUtr!,
-            style: const TextStyle(
-              fontFamily: 'Satoshi',
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+          Text('Complete the bank transfer and enter the UTR number to proceed.', style: TextStyle(fontFamily: _font, fontSize: 13, color: Colors.grey.shade700, height: 1.4)),
+          const SizedBox(height: 20),
+          
+          if (vm.transactionCreatedAt != null) ...[
+            if (vm.isExpired) _buildExpiredBadge() else _buildCountdownBadge(),
+            const SizedBox(height: 20),
+          ],
+
+          TextField(
+            controller: vm.utrController,
+            textCapitalization: TextCapitalization.characters,
+            style: const TextStyle(fontFamily: _font, fontWeight: FontWeight.w700, color: _ink),
+            decoration: InputDecoration(
+              hintText: 'Enter 12 or 16 digit UTR',
+              hintStyle: TextStyle(fontFamily: _font, color: Colors.grey.shade400, fontWeight: FontWeight.w500),
+              filled: true,
+              fillColor: Colors.white,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: _accent, width: 2)),
+            ),
+          ),
+          const SizedBox(height: 16),
+          _Pressable(
+            onTap: vm.utrSubmitting ? null : _submitUtr,
+            child: Container(
+              width: double.infinity,
+              height: 54,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: _navy,
+                borderRadius: BorderRadius.circular(30),
+              ),
+              child: vm.utrSubmitting 
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
+                : const Text('Submit UTR', style: TextStyle(fontFamily: _font, fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white)),
             ),
           ),
         ],
@@ -567,149 +418,19 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     );
   }
 
-  Widget _buildUtrSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Complete the bank transfer and submit your UTR number to download the final bill.',
-          style: TextStyle(
-            fontFamily: 'Satoshi',
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-          ),
-        ),
-
-        const SizedBox(height: 12),
-
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.orange.shade50,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.orange.shade200,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    Icons.warning_amber_rounded,
-                    color: Colors.orange.shade700,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'UTR must be submitted within 48 hours, otherwise the transaction will be automatically cancelled.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.orange.shade800,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 12),
-
-              if (vm.transactionCreatedAt != null)
-                vm.isExpired
-                    ? _buildExpiredBadge()
-                    : _buildCountdownBadge()
-              else
-                _buildDefaultTimerBadge(),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 16),
-
-        TextFormField(
-          controller: vm.utrController,
-          textCapitalization: TextCapitalization.characters,
-          decoration: InputDecoration(
-            hintText: 'Enter UTR Number',
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: Colors.grey.shade300,
-              ),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: Colors.grey.shade300,
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: AppTheme.PrimaryColor,
-                width: 2,
-              ),
-            ),
-          ),
-        ),
-
-        const SizedBox(height: 16),
-
-        AppPrimaryButton(
-          title: 'Submit UTR',
-          loading: vm.utrSubmitting,
-          onPressed: vm.utrSubmitting ? null : _submitUtr,
-        ),
-      ],
-    );
-  }
-
   Widget _buildCountdownBadge() {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 8,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.red.shade100,
-        borderRadius: BorderRadius.circular(10),
-      ),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: Colors.red.withOpacity(0.08), borderRadius: BorderRadius.circular(16)),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.timer_outlined,
-            color: Colors.red.shade700,
-            size: 18,
-          ),
-          const SizedBox(width: 8),
+          const Icon(Icons.timer_outlined, color: Colors.redAccent, size: 22),
+          const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Time Remaining',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.red.shade700,
-                ),
-              ),
-              Text(
-                vm.formatDuration(vm.remainingTime),
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.red.shade800,
-                  fontFamily: 'monospace',
-                  letterSpacing: 2,
-                ),
-              ),
+              Text('Time Remaining', style: TextStyle(fontFamily: _font, fontSize: 11, fontWeight: FontWeight.w800, color: Colors.redAccent.withOpacity(0.7))),
+              Text(vm.formatDuration(vm.remainingTime), style: const TextStyle(fontFamily: _font, fontSize: 18, fontWeight: FontWeight.w900, color: Colors.redAccent, letterSpacing: 1.5)),
             ],
           ),
         ],
@@ -719,29 +440,42 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
 
   Widget _buildExpiredBadge() {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 8,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.red.shade200,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: Colors.red.withOpacity(0.08), borderRadius: BorderRadius.circular(16)),
+      child: const Row(
         children: [
-          Icon(
-            Icons.error_outline,
-            color: Colors.red.shade900,
-            size: 18,
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '48-HOUR WINDOW EXPIRED',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: Colors.red.shade900,
+          Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 22),
+          SizedBox(width: 12),
+          Text('48-HOUR WINDOW EXPIRED', style: TextStyle(fontFamily: _font, fontSize: 13, fontWeight: FontWeight.w900, color: Colors.redAccent)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOfflineInstructions() {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), boxShadow: [BoxShadow(color: _navy.withOpacity(0.05), blurRadius: 14)]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Action Required', style: TextStyle(fontFamily: _font, fontWeight: FontWeight.w800, fontSize: 16, color: Colors.redAccent)),
+          const SizedBox(height: 8),
+          const Text('Transfer instructions sent to your email. You can also download them here:', style: TextStyle(fontFamily: _font, fontSize: 13, color: _ink, height: 1.4)),
+          const SizedBox(height: 16),
+          _Pressable(
+            onTap: vm.downloadInstructions,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(color: _accent.withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.file_download_outlined, color: _navy, size: 20),
+                  SizedBox(width: 8),
+                  Text('Download Instructions', style: TextStyle(fontFamily: _font, fontWeight: FontWeight.w800, color: _navy, fontSize: 13)),
+                ],
+              ),
             ),
           ),
         ],
@@ -749,149 +483,71 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     );
   }
 
-  Widget _buildDefaultTimerBadge() {
+  Widget _buildReceiptNotice() {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 6,
-      ),
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: Colors.orange.shade100,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.timer_outlined,
-            color: Colors.orange.shade800,
-            size: 16,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            '48-hour window applies',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Colors.orange.shade800,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDownloadButtonInstruction(bool isSuccess, bool isSettled) {
-    final bool show =  vm.isOffline && vm.existingUtr == null ;
-    if (!show) return const SizedBox.shrink();
-   return TextButton.icon(
-      onPressed: () {
-       vm.downloadInstructions();
-      },
-      label: Text(
-        'Download Instruction',
-        style: TextStyle(
-          fontFamily: 'Satoshi',
-                fontWeight: FontWeight.w600,
-                color: AppTheme.PrimaryColor,
-                fontSize: 18,
-          decoration: TextDecoration.underline,
-          decorationColor: AppTheme.PrimaryColor,
-          decorationThickness: 1.5,
-        ),
-      ),
-
-     icon: const Icon(Icons.arrow_forward_ios,color: AppTheme.PrimaryColor),
-     iconAlignment: IconAlignment.end,
-    );
-  }
-
-  Widget _showUtrText() {
-
-    if (!vm.showDownloadButton) {
-      return const SizedBox.shrink();
-    }
-
-    return Container(
-      
-      padding: EdgeInsets.all(10),
-
-      height: 350,
-
-      decoration: BoxDecoration(
-        color: AppTheme.PrimaryColor.withOpacity(0.4),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.grey.shade300,
-        ),
+        color: _accent.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: _accent.withOpacity(0.3)),
       ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
-          Text('UTR Submission Received', style: TextStyle(
-              fontFamily: 'Satoshi',
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              color: AppTheme.TextColor)),
-          const SizedBox(height: 8,),
-
+          const Text('Verification in Progress', style: TextStyle(fontFamily: _font, fontWeight: FontWeight.w800, fontSize: 16, color: _ink)),
+          const SizedBox(height: 10),
           Text(
-              'Thank you for submitting your UTR number.Your payment details have been successfully received and are currently under verification. Once the funds are credited to our account and the transaction is processed, the payment receipt (Bill Copy) will be sent to your registered email address.You can also download the receipt anytime from the Transaction History section of your PayFX Global account after the transaction is completed.We appreciate your patience and thank you for choosing PayFX Global.',
-              style: TextStyle(fontFamily: 'Satoshi',
-                  fontSize: 15,
-                  color: AppTheme.TextColor)),
+            'We have received your UTR. Your payment is being verified. The final receipt will be sent to your email and available here once processed.',
+            style: TextStyle(fontFamily: _font, fontSize: 14, color: _ink.withOpacity(0.8), height: 1.5),
+          ),
         ],
-
       ),
     );
   }
-
-Widget _showText(){
-
-  final bool show =  vm.isOffline && vm.existingUtr == null ;
-
-  if (!show) return const SizedBox.shrink();
-
- return Text('The instruction was sent to your mail id or download instruction here:',
-  style: TextStyle(fontFamily:'Satoshi',fontSize: 16, color: Colors.redAccent),);
-
 }
 
+class _FadeSlide extends StatelessWidget {
+  final Widget child;
+  final int index;
+  const _FadeSlide({required this.child, this.index = 0});
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: Duration(milliseconds: 400 + index * 80),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) => Opacity(
+        opacity: value.clamp(0.0, 1.0),
+        child: Transform.translate(offset: Offset(0, 20 * (1 - value)), child: child),
+      ),
+      child: child,
+    );
+  }
+}
 
-  Widget _buildDownloadButton() {
-    if (!vm.showDownloadButton) {
-      return const SizedBox.shrink();
-    }
+class _Pressable extends StatefulWidget {
+  final Widget child;
+  final VoidCallback? onTap;
+  const _Pressable({required this.child, this.onTap});
+  @override
+  State<_Pressable> createState() => _PressableState();
+}
 
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton.icon(
-        icon: const Icon(
-          Icons.file_download_outlined,
-          size: 20,
-        ),
-        label: const Text(
-          'Download Receipt',
-          style: TextStyle(
-            fontFamily: 'Satoshi',
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: AppTheme.TextColor,
-          padding: const EdgeInsets.symmetric(
-            vertical: 14,
-          ),
-          side: BorderSide(
-            color: Colors.grey.shade300,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        onPressed: _downloadFinalBill,
+class _PressableState extends State<_Pressable> {
+  bool _down = false;
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) => setState(() => _down = true),
+      onTapCancel: () => setState(() => _down = false),
+      onTapUp: (_) => setState(() => _down = false),
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _down ? 0.97 : 1,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: widget.child,
       ),
     );
   }

@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -29,9 +28,9 @@ class UserStorage {
                          panResult['full_name']?.toString() ??
                          panResult['name']?.toString();
 
-          if ((fullName == null || fullName.trim().isEmpty) && panResult['user_full_name_split'] is List) {
+          if ((fullName == null || fullName.trim().isEmpty || fullName == '1') && panResult['user_full_name_split'] is List) {
             final split = panResult['user_full_name_split'] as List;
-            final parts = split.map((e) => e.toString().trim()).where((e) => e.isNotEmpty).toList();
+            final parts = split.map((e) => e.toString().trim()).where((e) => e.isNotEmpty && e != '1').toList();
             if (parts.isNotEmpty) {
               fullName = parts.join(' ');
             }
@@ -41,10 +40,7 @@ class UserStorage {
                       panResult['dob']?.toString() ??
                       panResult['date_of_birth']?.toString();
 
-          debugPrint('💾 UserStorage: Saving Extracted Name: $fullName');
-          debugPrint('💾 UserStorage: Saving Extracted DOB: $dob');
-
-          if (fullName != null && fullName.trim().isNotEmpty) {
+          if (fullName != null && fullName.trim().isNotEmpty && fullName != '1') {
             await prefs.setString(_userNameKey, fullName.trim());
           }
           if (dob != null && dob.trim().isNotEmpty) {
@@ -60,7 +56,7 @@ class UserStorage {
   static Future<String?> getUserFullName() async {
     final prefs = await SharedPreferences.getInstance();
     final name = prefs.getString(_userNameKey);
-    if (name != null && name.trim().isNotEmpty) return name.trim();
+    if (name != null && name.trim().isNotEmpty && name != '1') return name.trim();
     
     // Fallback to customer name in main storage
     final data = await getUserData();
@@ -73,18 +69,21 @@ class UserStorage {
           final result = panResponse['result'];
           if (result != null) {
             final panName = result['user_full_name']?.toString().trim();
-            if (panName != null && panName.isNotEmpty) return panName;
+            if (panName != null && panName.isNotEmpty && panName != '1') return panName;
             if (result['user_full_name_split'] is List) {
               final split = result['user_full_name_split'] as List;
-              final parts = split.map((e) => e.toString().trim()).where((e) => e.isNotEmpty).toList();
+              final parts = split.map((e) => e.toString().trim()).where((e) => e.isNotEmpty && e != '1').toList();
               if (parts.isNotEmpty) return parts.join(' ');
             }
           }
         } catch (_) {}
       }
-      return customer['name']?.toString() ?? 
-             customer['firstname']?.toString() ?? 
-             customer['full_name']?.toString();
+      
+      final fallbackName = customer['full_name']?.toString() ?? 
+                           customer['name']?.toString() ?? 
+                           customer['firstname']?.toString();
+      
+      if (fallbackName != null && fallbackName != '1') return fallbackName;
     }
     return null;
   }
@@ -98,7 +97,6 @@ class UserStorage {
   static Future<String?> getUserDob() async {
     final prefs = await SharedPreferences.getInstance();
     final dob = prefs.getString(_userDobKey);
-    debugPrint('📖 UserStorage: Retrieved DOB: $dob');
     return dob;
   }
 
@@ -120,6 +118,5 @@ class UserStorage {
     await prefs.remove(_key);
     await prefs.remove(_userNameKey);
     await prefs.remove(_userDobKey);
-    debugPrint('🧹 UserStorage: Cleared user data');
   }
 }

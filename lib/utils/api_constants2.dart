@@ -1,4 +1,5 @@
 class ApiConstants {
+
   static const String baseUrl = 'https://www.payfxglobal.com';
   static const String sendOtpUrl = '$baseUrl/app/customer/add';
   static const String sendOtpUrl2 = '$baseUrl/app/customer/add2';
@@ -33,6 +34,7 @@ class ApiConstants {
   static const String getSubmitUtrUrl = '$baseUrl/app/customer/apisubmitutr';
   static const String loginUrl = '$baseUrl/app/customer/login';
   static const String googleLoginUrl = '$baseUrl/app/customer/googleLogin';
+  static const String appleLoginUrl = '$baseUrl/app/customer/appleLogin';
   static const String logoutUrl = '$baseUrl/app/customer/logout';
   static const String updatePasswordUrl =
       '$baseUrl/app/customer/updatePassword';
@@ -40,7 +42,13 @@ class ApiConstants {
   static const String updateProfileUrl = '$baseUrl/app/customer/update-profile';
   static const String changePasswordUrl =
       '$baseUrl/app/customer/change-password';
-  static const String deleteAccountUrl = '$baseUrl/app/customer/deleteAccount';
+  static const String deleteAccountUrl =
+      '$baseUrl/app/customer/account-closure-submit-deactivate';
+  static const String accountClosureReasonUrl =
+      '$baseUrl/app/customer/account-closure-submit-reason';
+  static const String checkAccountActivationUrl =
+      '$baseUrl/app/customer/check-account-activation';
+
   static const String storeTransactionUrl =
       '$baseUrl/app/customer/store-transaction-data';
   static const String transactionSummaryUrl =
@@ -58,4 +66,5 @@ class ApiConstants {
       '$baseUrl/api_flutter/get_currency_rates.php';
   static const String createLoanApplicantUrl = '$baseUrl/loan_applicant.php';
   static const String todayIbrRateUrl = '$baseUrl/app/customer/today-ibr-rate';
+
 }

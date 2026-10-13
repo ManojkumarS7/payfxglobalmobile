@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:payfxglobal/utils/app_theme.dart';
 import 'package:payfxglobal/utils/user_storage.dart';
 import 'package:payfxglobal/widgets/custom_loading_indicator.dart';
+import '../../../utils/app_theme.dart';
 import '../../../utils/session_manager.dart';
 
 class UnlockScreen extends StatefulWidget {
@@ -13,13 +13,20 @@ class UnlockScreen extends StatefulWidget {
   State<UnlockScreen> createState() => _UnlockScreenState();
 }
 
-
 class _UnlockScreenState extends State<UnlockScreen> with WidgetsBindingObserver {
   final LocalAuthentication auth = LocalAuthentication();
   bool isLoading = false;
   bool? _isResuming;
   bool _wasPaused = false;
   int _failedAttempts = 0;
+
+  // ---- Palette (Matched with Dashboard) ----
+  // static const Color _navy = Color(0xFF16305C);
+  static const Color _ink = Color(0xFF0B1B3A);
+  static const Color _accent = Color(0xFFFFC72C);
+  static const Color _bg = Color(0xFFF5F7FB);
+  static const String _font = 'Satoshi';
+
   @override
   void initState() {
     super.initState();
@@ -28,34 +35,33 @@ class _UnlockScreenState extends State<UnlockScreen> with WidgetsBindingObserver
       _authenticate();
     });
   }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_isResuming == null) {
       final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
       _isResuming = args?['isResuming'] as bool? ?? false;
-      debugPrint('🔓 UnlockScreen arguments: isResuming = $_isResuming');
     }
   }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    debugPrint('📱 UnlockScreen Lifecycle: $state');
-
-    // Track if the app was actually backgrounded (paused)
     if (state == AppLifecycleState.paused) {
       _wasPaused = true;
     }
-    // Auto-trigger biometric prompt when returning to foreground from background
     if (state == AppLifecycleState.resumed && _wasPaused) {
       _wasPaused = false;
       _authenticate();
     }
   }
+
   Future<void> _authenticate() async {
     if (isLoading) return;
     try {
@@ -63,64 +69,43 @@ class _UnlockScreenState extends State<UnlockScreen> with WidgetsBindingObserver
       final bool canAuthenticateWithBiometrics = await auth.canCheckBiometrics;
       final bool canAuthenticate = canAuthenticateWithBiometrics || await auth.isDeviceSupported();
       if (!canAuthenticate) {
-        debugPrint('Device does not support biometrics, skipping to success');
         await _handleSuccess();
         return;
       }
       final bool authenticated = await auth.authenticate(
-        localizedReason: 'Please unlock PayFX Global to continue',
+        localizedReason: 'Unlock PayFX Global to continue',
         options: const AuthenticationOptions(
           biometricOnly: false,
           stickyAuth: true,
           useErrorDialogs: true,
         ),
       );
-      debugPrint('Authentication result: $authenticated');
       if (authenticated && mounted) {
         await _handleSuccess();
       } else if (!authenticated) {
         _failedAttempts++;
-
         if (_failedAttempts >= 5) {
-          await SessionManager().forceLogout(
-            reason: 'Too many failed attempts',
-          );
+          await SessionManager().forceLogout(reason: 'Too many failed attempts');
         }
       }
-    } on PlatformException catch (e) {
-      debugPrint('Auth error: ${e.message}');
-    } catch (e) {
-      debugPrint('Unexpected auth error: $e');
+    } on PlatformException catch (_) {
+    } catch (_) {
     } finally {
-      if (mounted) {
-        setState(() => isLoading = false);
-      }
+      if (mounted) setState(() => isLoading = false);
     }
   }
 
   Future<void> _handleSuccess() async {
-    try {
-      // Reset session timers
-      await SessionManager.updateLastActive();
-      if (!mounted) return;
-      if (_isResuming == true) {
-        // Warm start: just pop to return to the active screen the user was on
-        debugPrint('🔓 Warm start unlock: popping UnlockScreen');
-        Navigator.of(context).pop();
-      } else {
-        // Cold start: navigate to dashboard or correct onboarding step
-        debugPrint('🔓 Cold start unlock: redirecting to correct screen');
-        final userData = await UserStorage.getUserData();
-        if (mounted) {
-          await _navigateToCorrectStepColdStart(context, userData);
-        }
-      }
-    } catch (e) {
-      debugPrint('Error during unlock success: $e');
+    await SessionManager.updateLastActive();
+    if (!mounted) return;
+    if (_isResuming == true) {
+      Navigator.of(context).pop();
+    } else {
+      final userData = await UserStorage.getUserData();
+      if (mounted) await _navigateToCorrectStepColdStart(context, userData);
     }
   }
-  /// Specialized cold-start navigation to ensure the stack is cleared (pushNamedAndRemoveUntil)
-  /// so that back-button operations do not return the user to the splash screen.
+
   Future<void> _navigateToCorrectStepColdStart(BuildContext context, Map<String, dynamic> userData) async {
     if (userData.isEmpty) {
       Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
@@ -132,184 +117,97 @@ class _UnlockScreenState extends State<UnlockScreen> with WidgetsBindingObserver
     final stepNo = int.tryParse(customerData['step_no']?.toString() ?? '0') ?? 0;
     final userId = customerData['id'];
     final email = customerData['email'];
+
     if (stepNo == 100) {
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        '/identity-verification',
-            (route) => false,
-        arguments: {
-          'user_id': userId,
-          'email': email,
-          'service': 'money_transfer',
-        },
-      );
+      Navigator.pushNamedAndRemoveUntil(context, '/identity-verification', (route) => false, arguments: {'user_id': userId, 'email': email, 'service': 'money_transfer'});
     } else if (stepNo == 200) {
-      Map<String, dynamic> senderArgs = {
-        'user_id': userId,
-        'email': email,
-        'service': 'money_transfer',
-      };
+      Map<String, dynamic> senderArgs = {'user_id': userId, 'email': email, 'service': 'money_transfer'};
       try {
         final panResponseRaw = customerData['pan_response'];
         if (panResponseRaw != null && panResponseRaw.toString().isNotEmpty) {
-          final panResponse = panResponseRaw is String
-              ? jsonDecode(panResponseRaw)
-              : panResponseRaw;
+          final panResponse = panResponseRaw is String ? jsonDecode(panResponseRaw) : panResponseRaw;
           final panResult = panResponse['result'];
           if (panResult != null) {
             senderArgs['name'] = panResult['user_full_name'];
             senderArgs['dob'] = panResult['user_dob'];
             senderArgs['aadhaar'] = panResult['masked_aadhaar'];
-            senderArgs['aadhaar_linked'] =
-                panResult['aadhaar_linked_status'] == true ||
-                    panResult['aadhaar_linked_status'] == 1 ||
-                    panResult['aadhaar_linked_status'].toString() == 'true';
+            senderArgs['aadhaar_linked'] = panResult['aadhaar_linked_status'] == true || panResult['aadhaar_linked_status'] == 1 || panResult['aadhaar_linked_status'].toString() == 'true';
             final addr = panResult['user_address'];
-            if (addr != null) {
-              senderArgs['address'] = {
-                'street': addr['street_name'] ?? addr['line_1'] ?? '',
-                'line2': addr['line_2'] ?? '',
-                'city': addr['city'] ?? '',
-                'state': addr['state'] ?? '',
-                'pincode': addr['zip'] ?? '',
-              };
-            }
+            if (addr != null) senderArgs['address'] = {'street': addr['street_name'] ?? addr['line_1'] ?? '', 'line2': addr['line_2'] ?? '', 'city': addr['city'] ?? '', 'state': addr['state'] ?? '', 'pincode': addr['zip'] ?? ''};
           }
         }
-      } catch (e) {
-        debugPrint('Error parsing pan_response in UnlockScreen: $e');
-      }
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        '/sender-details',
-            (route) => false,
-        arguments: senderArgs,
-      );
+      } catch (_) {}
+      Navigator.pushNamedAndRemoveUntil(context, '/sender-details', (route) => false, arguments: senderArgs);
     } else if (stepNo == 300) {
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        '/upload-documents',
-            (route) => false,
-        arguments: {'user_id': userId, 'email': email},
-      );
+      Navigator.pushNamedAndRemoveUntil(context, '/upload-documents', (route) => false, arguments: {'user_id': userId, 'email': email});
     } else {
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        '/dashboard',
-            (route) => false,
-        arguments: {'userData': userData},
-      );
+      Navigator.pushNamedAndRemoveUntil(context, '/dashboard', (route) => false, arguments: {'userData': userData});
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Wrap entire layout in PopScope(canPop: false) to prevent Android hardware back button bypass
     return PopScope(
       canPop: false,
-      onPopInvokedWithResult: (didPop, result) {
-        if (didPop) return;
-        debugPrint('🛡️ Back button bypass blocked by PopScope');
-      },
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: _bg,
         body: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 30),
+            padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
               children: [
                 const SizedBox(height: 60),
-                Center(
-                  child: Image.asset(
-                    'assets/images/payfx.png',
-                    height: 160,
-                    fit: BoxFit.contain,
+                _FadeSlide(
+                  index: 0,
+                  child: Center(
+                    child: Image.asset('assets/images/payfx.png', height: 160, fit: BoxFit.contain, 
+                        errorBuilder: (_, __, ___) => const Text('PayFX', style: TextStyle(fontFamily: _font, fontSize: 32, fontWeight: FontWeight.w900, color:  AppTheme.PrimaryColor))),
                   ),
                 ),
                 const Spacer(),
-                Container(
-                  width: 140,
-                  height: 140,
-                  decoration: BoxDecoration(
-                    color: AppTheme.PrimaryColor.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.lock_open_rounded,
-                    size: 70,
-                    color: AppTheme.TextColor,
+                _FadeSlide(
+                  index: 1,
+                  child: Container(
+                    width: 140,
+                    height: 140,
+                    decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, boxShadow: [BoxShadow(color:  AppTheme.PrimaryColor.withOpacity(0.06), blurRadius: 20, offset: const Offset(0, 10))]),
+                    child: const Icon(Icons.lock_open_rounded, size: 64, color:  AppTheme.PrimaryColor),
                   ),
                 ),
                 const SizedBox(height: 40),
-                const Text(
-                  'Unlock PayFX',
-                  style: TextStyle(
-                    fontFamily: 'Satoshi',
-                    fontSize: 28,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.TextColor,
-                  ),
-                ),
+                _FadeSlide(index: 2, child: const Text('Locked App', style: TextStyle(fontFamily: _font, fontSize: 26, fontWeight: FontWeight.w900, color: _ink, letterSpacing: -0.5))),
                 const SizedBox(height: 12),
-                const Text(
-                  'Please verify your identity to continue using your account securely.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: 'Satoshi',
-                    fontSize: 16,
-                    color: Colors.grey,
-                    fontWeight: FontWeight.w400,
-                    height: 1.5,
-                  ),
-                ),
+                _FadeSlide(index: 3, child: const Text('Please authenticate to continue accessing your secure transfers.', textAlign: TextAlign.center, style: TextStyle(fontFamily: _font, fontSize: 15, color: Colors.grey, height: 1.5, fontWeight: FontWeight.w600))),
                 const Spacer(),
                 if (isLoading)
-
-                  const CustomLoadingIndicator()
+                  const _FadeSlide(index: 4, child: CustomLoadingIndicator())
                 else
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: _authenticate,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.PrimaryColor,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                  _FadeSlide(
+                    index: 4,
+                    child: _Pressable(
+                      onTap: _authenticate,
+                      child: Container(
+                        width: double.infinity,
+                        height: 56,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(color:  AppTheme.PrimaryColor, borderRadius: BorderRadius.circular(30), boxShadow: [BoxShadow(color:  AppTheme.PrimaryColor.withOpacity(0.2), blurRadius: 12, offset: const Offset(0, 6))]),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.fingerprint_rounded, color: Colors.white, size: 24),
+                            SizedBox(width: 12),
+                            Text('CONTINUE', style: TextStyle(fontFamily: _font, fontSize: 15, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 1)),
+                          ],
                         ),
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.fingerprint, size: 24),
-                          SizedBox(width: 12),
-                          Text(
-                            'CONTINUE',
-                            style: TextStyle(
-                              fontFamily: 'Satoshi',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                        ],
                       ),
                     ),
                   ),
                 const SizedBox(height: 24),
-                TextButton(
-                  onPressed: () async {
-                    await SessionManager().forceLogout();
-                  },
-                  child: Text(
-                    'Not you? Log out',
-                    style: TextStyle(
-                      fontFamily: 'Satoshi',
-                      color: AppTheme.TextColor.withOpacity(0.6),
-                      fontWeight: FontWeight.w600,
-                    ),
+                _FadeSlide(
+                  index: 5,
+                  child: TextButton(
+                    onPressed: () async => await SessionManager().forceLogout(),
+                    child: Text('Not you? Sign out', style: TextStyle(fontFamily: _font, color: Colors.grey.shade600, fontWeight: FontWeight.w800, decoration: TextDecoration.underline)),
                   ),
                 ),
                 const SizedBox(height: 30),
@@ -317,6 +215,53 @@ class _UnlockScreenState extends State<UnlockScreen> with WidgetsBindingObserver
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _FadeSlide extends StatelessWidget {
+  final Widget child;
+  final int index;
+  const _FadeSlide({required this.child, this.index = 0});
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: Duration(milliseconds: 600 + index * 100),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) => Opacity(
+        opacity: value.clamp(0.0, 1.0),
+        child: Transform.translate(offset: Offset(0, 30 * (1 - value)), child: child),
+      ),
+      child: child,
+    );
+  }
+}
+
+class _Pressable extends StatefulWidget {
+  final Widget child;
+  final VoidCallback? onTap;
+  const _Pressable({required this.child, this.onTap});
+  @override
+  State<_Pressable> createState() => _PressableState();
+}
+
+class _PressableState extends State<_Pressable> {
+  bool _down = false;
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) => setState(() => _down = true),
+      onTapCancel: () => setState(() => _down = false),
+      onTapUp: (_) => setState(() => _down = false),
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _down ? 0.96 : 1,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: widget.child,
       ),
     );
   }

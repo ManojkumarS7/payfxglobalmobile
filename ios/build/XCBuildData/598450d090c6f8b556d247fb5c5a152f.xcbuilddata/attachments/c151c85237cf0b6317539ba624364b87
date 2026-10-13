@@ -1,0 +1,23 @@
+{
+  "version": 0,
+  "use-external-names": false,
+  "case-sensitive": false,
+  "roots": [{
+    "type": "directory",
+    "name": "/Users/apple/studioprojects/payfxglobal/ios/build/Release-iphoneos/AppCheckCore/AppCheckCore.framework/Modules",
+    "contents": [{
+      "type": "file",
+      "name": "module.modulemap",
+      "external-contents": "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/AppCheckCore.build/unextended-module.modulemap",
+    }]
+    },
+    {
+    "type": "directory",
+    "name": "/Users/apple/studioprojects/payfxglobal/ios/build/Release-iphoneos/AppCheckCore/AppCheckCore.framework/Headers",
+    "contents": [{
+      "type": "file",
+      "name": "AppCheckCore-Swift.h",
+      "external-contents": "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/AppCheckCore.build/unextended-interface-header.h",
+    }]
+  }]
+}

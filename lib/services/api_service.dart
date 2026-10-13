@@ -181,9 +181,11 @@ class ApiService {
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       } else {
+        print(response.body);
         throw Exception("Failed to create order");
       }
     } catch (e) {
+      print(e);
       throw Exception("API Error: $e");
     }
   }
@@ -255,7 +257,7 @@ class ApiService {
       throw Exception('HTTP ${res.statusCode}');
     }
   }
-
+  //
   static Future<Map<String, dynamic>?> paymentReturn({required String order_id}) async {
     try {
       final headers = await authHeaders();
@@ -553,8 +555,46 @@ class ApiService {
         request.files.add(await http.MultipartFile.fromPath(entry.key, entry.value!.path!));
       }
     }
+    // Debug: Request details
+    print('\n========== CREATE TRANSACTION API ==========');
+    print('URL: ${request.url}');
+    print('METHOD: ${request.method}');
+
+// Headers (avoid printing authorization tokens)
+    print('HEADERS: ${request.headers.keys.toList()}');
+
+// Form fields
+    print('\n--- REQUEST FIELDS ---');
+    request.fields.forEach((key, value) {
+      print('$key: $value');
+    });
+
+// Files
+    print('\n--- REQUEST FILES ---');
+    for (final entry in files.entries) {
+      final file = entry.value;
+
+      if (file != null) {
+        print('Field Name: ${entry.key}');
+        print('File Name: ${file.name}');
+        print('File Path: ${file.path}');
+        print('File Size: ${file.size} bytes');
+        print('-------------------------');
+      }
+    }
+
+    print('============================================\n');
+
+// Send request
     final streamed = await request.send();
+
     final response = await http.Response.fromStream(streamed);
+
+    print('\n========== API RESPONSE ==========');
+    print('Status Code: ${response.statusCode}');
+    print('Response Body: ${response.body}');
+    print('==================================\n');
+
     return jsonDecode(response.body);
   }
 
@@ -688,9 +728,27 @@ class ApiService {
     return jsonDecode(response.body);
   }
 
-  static Future<Map<String, dynamic>> deleteAccount({required String password, required String email}) async {
+  static Future<Map<String, dynamic>> deleteAccount({required String email}) async {
     final headers = await authHeaders();
-    final response = await http.post(Uri.parse(ApiConstants.deleteAccountUrl), headers: {...headers, 'Content-Type': 'application/json'}, body: jsonEncode({'password': password, 'email': email}));
+    final response = await http.post(Uri.parse(ApiConstants.deleteAccountUrl), headers: {...headers, 'Content-Type': 'application/json'}, body: jsonEncode({'email': email}));
+    return jsonDecode(response.body);
+  }
+
+  static Future<Map<String, dynamic>> submitAccountClosureReason({
+    required String email,
+    required String deactivationReason,
+    String? othersReason,
+  }) async {
+    final headers = await authHeaders();
+    final response = await http.post(
+      Uri.parse(ApiConstants.accountClosureReasonUrl),
+      headers: {...headers, 'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'email': email,
+        'deactivation_reason': deactivationReason,
+        'others_reason': othersReason ?? '',
+      }),
+    );
     return jsonDecode(response.body);
   }
 

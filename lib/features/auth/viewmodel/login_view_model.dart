@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../service/auth_api_service.dart';
 
 class LoginViewModel extends ChangeNotifier {
@@ -98,7 +100,92 @@ class LoginViewModel extends ChangeNotifier {
       isLoading = false;
       notifyListeners();
       debugPrint('Google Sign-In Error: $e');
-      return {'success': false, 'message': e.toString()};
+      return {'success': false, 'message': 'Google Sign-In failed'};
+    }
+  }
+
+  Future<Map<String, dynamic>> handleAppleSignIn() async {
+    try {
+      isLoading = true;
+      notifyListeners();
+
+      if (Platform.isAndroid) {
+        isLoading = false;
+        notifyListeners();
+        return {
+          'success': false, 
+          'message': 'Apple Sign-In is not supported on Android devices'
+        };
+      }
+
+      final AuthorizationCredentialAppleID appleCredential =
+          await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+      );
+
+      final String? idToken = appleCredential.identityToken;
+
+      if (idToken == null) {
+        isLoading = false;
+        notifyListeners();
+        return {'success': false, 'message': 'Failed to get ID token from Apple'};
+      }
+
+      String? fcmToken;
+      try {
+        fcmToken = await FirebaseMessaging.instance.getToken();
+      } catch (e) {
+        debugPrint('Error getting FCM token: $e');
+      }
+
+      final result = await apiService.loginWithApple(
+        idToken: idToken,
+        fcmToken: fcmToken ?? '',
+        firstName: appleCredential.givenName,
+        lastName: appleCredential.familyName,
+        email: appleCredential.email,
+      );
+
+      isLoading = false;
+      notifyListeners();
+
+      return result;
+    } on SignInWithAppleAuthorizationException catch (e) {
+      isLoading = false;
+      notifyListeners();
+      debugPrint('Apple Sign-In Authorization Error: $e');
+      
+      final errorStr = e.toString().toLowerCase();
+      String message = 'Apple Sign-In failed';
+      
+      if (e.code == AuthorizationErrorCode.canceled || 
+          errorStr.contains('1000') || 
+          errorStr.contains('canceled') || 
+          errorStr.contains('cancelled')) {
+        message = 'Apple Sign-In cancelled';
+      }
+      
+      return {'success': false, 'message': message};
+    } catch (e) {
+      isLoading = false;
+      notifyListeners();
+      debugPrint('Apple Sign-In Generic Error: $e');
+      
+      final errorStr = e.toString().toLowerCase();
+      String message = 'Apple Sign-In failed';
+      
+      if (errorStr.contains('webauthenticationoptions')) {
+        message = 'Apple Sign-In is not supported on this device';
+      } else if (errorStr.contains('1000') || 
+                 errorStr.contains('canceled') || 
+                 errorStr.contains('cancelled')) {
+        message = 'Apple Sign-In cancelled';
+      }
+      
+      return {'success': false, 'message': message};
     }
   }
 

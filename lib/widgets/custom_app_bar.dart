@@ -1,50 +1,6 @@
-// import 'package:flutter/material.dart';
-//
-// class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
-//   final String title;
-//   final List<Widget>? actions;
-//   final bool showBack;
-//   final VoidCallback? onBack;
-//
-//   const CustomAppBar({
-//     super.key,
-//     required this.title,
-//     this.actions,
-//     this.showBack = false,
-//     this.onBack,
-//   });
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return AppBar(
-//       leading: showBack
-//           ? IconButton(
-//               icon: const Icon(Icons.arrow_back, color: Colors.black),
-//               onPressed: onBack ?? () => Navigator.of(context).pop(),
-//             )
-//           : null,
-//       backgroundColor: Colors.transparent,
-//       elevation: 0,
-//       title: Text(
-//         title,
-//         style: const TextStyle(
-//           color: Colors.black,
-//           fontWeight: FontWeight.bold,
-//         ),
-//       ),
-//       centerTitle: false,
-//       iconTheme: const IconThemeData(color: Colors.black),
-//       actions: actions,
-//     );
-//   }
-//
-//   @override
-//   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
-// }
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:payfxglobal/utils/app_theme.dart';
-// import '../utils/app_theme.dart.dart';
 
 class AppPrimaryAppBar extends StatelessWidget
     implements PreferredSizeWidget {
@@ -52,6 +8,8 @@ class AppPrimaryAppBar extends StatelessWidget
   final bool showBackButton;
   final List<Widget>? actions;
   final VoidCallback? onBack;
+  final Color backgroundColor;
+  final Color textColor;
 
   const AppPrimaryAppBar({
     Key? key,
@@ -59,6 +17,8 @@ class AppPrimaryAppBar extends StatelessWidget
     this.showBackButton = true,
     this.actions,
     this.onBack,
+    this.backgroundColor = Colors.white,
+    this.textColor = AppTheme.TextColor,
   }) : super(key: key);
 
   @override
@@ -66,39 +26,39 @@ class AppPrimaryAppBar extends StatelessWidget
 
   @override
   Widget build(BuildContext context) {
+    final bool isDarkBackground = backgroundColor.computeLuminance() < 0.5;
+    
     return AppBar(
       scrolledUnderElevation: 0.0,
       surfaceTintColor: Colors.transparent,
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundColor,
+      systemOverlayStyle: isDarkBackground 
+          ? SystemUiOverlayStyle.light 
+          : SystemUiOverlayStyle.light,
       elevation: 0,
       centerTitle: false,
       automaticallyImplyLeading: false,
-
-
       leading: showBackButton
           ? IconButton(
-        icon: const Icon(
-          Icons.arrow_back,
-          color: AppTheme.TextColor,
-        ),
-        onPressed: onBack ??
-                () {
-              Navigator.of(context).pop();
-            },
-      )
+              icon: Icon(
+                Icons.arrow_back,
+                color: textColor,
+              ),
+              onPressed: onBack ??
+                  () {
+                    Navigator.of(context).pop();
+                  },
+            )
           : null,
-
       title: Text(
         title,
-        style: const TextStyle(
-          color: AppTheme.TextColor,
+        style: TextStyle(
+          color: textColor,
           fontSize: 20,
           fontWeight: FontWeight.w700,
           fontFamily: 'Satoshi',
         ),
       ),
-
-
       actions: actions,
     );
   }

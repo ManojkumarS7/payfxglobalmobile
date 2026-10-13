@@ -1,0 +1,26 @@
+{
+  "" : {
+    "const-values" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/local_auth_darwin.build/Objects-normal/arm64/local_auth_darwin-primary.swiftconstvalues",
+    "dependencies" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/local_auth_darwin.build/Objects-normal/arm64/local_auth_darwin-primary.d",
+    "diagnostics" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/local_auth_darwin.build/Objects-normal/arm64/local_auth_darwin-primary.dia",
+    "emit-module-dependencies" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/local_auth_darwin.build/Objects-normal/arm64/local_auth_darwin-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/local_auth_darwin.build/Objects-normal/arm64/local_auth_darwin-primary-emit-module.dia",
+    "pch" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/local_auth_darwin.build/Objects-normal/arm64/local_auth_darwin-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/local_auth_darwin.build/Objects-normal/arm64/local_auth_darwin-primary.swiftdeps"
+  },
+  "/Users/apple/.pub-cache/hosted/pub.dev/local_auth_darwin-1.6.1/darwin/local_auth_darwin/Sources/local_auth_darwin/LocalAuthPlugin.swift" : {
+    "index-unit-output-path" : "/Pods.build/Release-iphoneos/local_auth_darwin.build/Objects-normal/arm64/LocalAuthPlugin.o",
+    "llvm-bc" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/local_auth_darwin.build/Objects-normal/arm64/LocalAuthPlugin.bc",
+    "object" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/local_auth_darwin.build/Objects-normal/arm64/LocalAuthPlugin.o"
+  },
+  "/Users/apple/.pub-cache/hosted/pub.dev/local_auth_darwin-1.6.1/darwin/local_auth_darwin/Sources/local_auth_darwin/SystemWrappers.swift" : {
+    "index-unit-output-path" : "/Pods.build/Release-iphoneos/local_auth_darwin.build/Objects-normal/arm64/SystemWrappers.o",
+    "llvm-bc" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/local_auth_darwin.build/Objects-normal/arm64/SystemWrappers.bc",
+    "object" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/local_auth_darwin.build/Objects-normal/arm64/SystemWrappers.o"
+  },
+  "/Users/apple/.pub-cache/hosted/pub.dev/local_auth_darwin-1.6.1/darwin/local_auth_darwin/Sources/local_auth_darwin/messages.g.swift" : {
+    "index-unit-output-path" : "/Pods.build/Release-iphoneos/local_auth_darwin.build/Objects-normal/arm64/messages.g.o",
+    "llvm-bc" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/local_auth_darwin.build/Objects-normal/arm64/messages.g.bc",
+    "object" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/local_auth_darwin.build/Objects-normal/arm64/messages.g.o"
+  }
+}

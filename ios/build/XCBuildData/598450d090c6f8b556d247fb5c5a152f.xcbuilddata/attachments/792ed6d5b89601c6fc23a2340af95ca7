@@ -1,0 +1,16 @@
+{
+  "" : {
+    "const-values" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/app_links.build/Objects-normal/arm64/app_links-primary.swiftconstvalues",
+    "dependencies" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/app_links.build/Objects-normal/arm64/app_links-primary.d",
+    "diagnostics" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/app_links.build/Objects-normal/arm64/app_links-primary.dia",
+    "emit-module-dependencies" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/app_links.build/Objects-normal/arm64/app_links-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/app_links.build/Objects-normal/arm64/app_links-primary-emit-module.dia",
+    "pch" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/app_links.build/Objects-normal/arm64/app_links-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/app_links.build/Objects-normal/arm64/app_links-primary.swiftdeps"
+  },
+  "/Users/apple/.pub-cache/hosted/pub.dev/app_links-6.4.1/ios/app_links/Sources/app_links/AppLinksIosPlugin.swift" : {
+    "index-unit-output-path" : "/Pods.build/Release-iphoneos/app_links.build/Objects-normal/arm64/AppLinksIosPlugin.o",
+    "llvm-bc" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/app_links.build/Objects-normal/arm64/AppLinksIosPlugin.bc",
+    "object" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/app_links.build/Objects-normal/arm64/AppLinksIosPlugin.o"
+  }
+}

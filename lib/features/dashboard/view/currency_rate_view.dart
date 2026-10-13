@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:payfxglobal/features/money_transfer/model/currency_model.dart';
-import 'package:payfxglobal/widgets/custom_app_bar.dart';
 import 'package:shimmer_animation/shimmer_animation.dart';
 import '../../../services/app_services.dart';
+import '../../../utils/app_theme.dart';
 import '../../../widgets/no_internet_banner.dart';
 
 class CurrencyRateView extends StatefulWidget {
@@ -17,7 +17,14 @@ class CurrencyRateView extends StatefulWidget {
 class _CurrencyRateViewState extends State<CurrencyRateView> {
   bool _isLoading = true;
   List<Currency> currencies = [];
-  Map<String, String> rates = {}; // Store fetched rates here
+  Map<String, String> rates = {};
+
+  // ---- Palette (Matched with Dashboard) ----
+  static const Color _navy =  AppTheme.PrimaryColor;
+  static const Color _ink = Color(0xFF0B1B3A);
+  static const Color _accent = Color(0xFFFFC72C);
+  static const Color _bg = Color(0xFFF5F7FB);
+  static const String _font = 'Satoshi';
 
   @override
   void initState() {
@@ -26,10 +33,10 @@ class _CurrencyRateViewState extends State<CurrencyRateView> {
   }
 
   Future<void> _fetchData() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     await _fetchCurrencies();
 
-    // Fire all rate requests in parallel instead of one-by-one
     final results = await Future.wait(
       currencies.map((currency) async {
         final rate = await fetchExchangeRate(currency.code);
@@ -37,14 +44,13 @@ class _CurrencyRateViewState extends State<CurrencyRateView> {
       }),
     );
 
-    rates = Map.fromEntries(results);
-
     if (mounted) {
-      setState(() => _isLoading = false);
+      setState(() {
+        rates = Map.fromEntries(results);
+        _isLoading = false;
+      });
     }
   }
-
-
 
   Future<String> fetchExchangeRate(String currencyCode) async {
     try {
@@ -77,7 +83,6 @@ class _CurrencyRateViewState extends State<CurrencyRateView> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<bool>(
@@ -88,70 +93,85 @@ class _CurrencyRateViewState extends State<CurrencyRateView> {
         if (!isConnected) return NoInternetScreen(onRetry: _fetchData);
 
         return Scaffold(
-          backgroundColor: const Color(0xFFF8F9FB),
-          appBar: const AppPrimaryAppBar(title: 'Live Exchange Rates'),
+          backgroundColor: _bg,
+          appBar: AppBar(
+            backgroundColor: _bg,
+            elevation: 0,
+            centerTitle: false,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: _ink, size: 20),
+              onPressed: () => Navigator.pop(context),
+            ),
+            title: const Text(
+              'Live Exchange Rates',
+              style: TextStyle(fontFamily: _font, fontSize: 22, fontWeight: FontWeight.w800, color: _ink, letterSpacing: -0.5),
+            ),
+          ),
           body: _isLoading
               ? _buildShimmerLoading()
               : ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: currencies.length,
-            itemBuilder: (context, index) {
-              final item = currencies[index];
-              final rate = rates[item.code] ?? '...';
-
-              return Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    )
-                  ],
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  itemCount: currencies.length,
+                  itemBuilder: (context, index) {
+                    final item = currencies[index];
+                    final rate = rates[item.code] ?? '...';
+                    return _FadeSlide(
+                      index: index,
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [BoxShadow(color: _navy.withOpacity(0.05), blurRadius: 14, offset: const Offset(0, 6))],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(color: _bg, borderRadius: BorderRadius.circular(16)),
+                              child: Center(
+                                child: ClipOval(
+                                  child: Image.asset(item.flagAsset, width: 28, height: 28, fit: BoxFit.cover, 
+                                      errorBuilder: (_, __, ___) => const Icon(Icons.flag_rounded, color: _navy)),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('1 ${item.code}', style: const TextStyle(fontFamily: _font, fontSize: 16, fontWeight: FontWeight.w800, color: _ink)),
+                                  const SizedBox(height: 2),
+                                  Text(item.name ?? 'Foreign Currency', style: TextStyle(fontFamily: _font, fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
+                                ],
+                              ),
+                            ),
+                            const Icon(Icons.sync_alt_rounded, color: Colors.grey, size: 18),
+                            const SizedBox(width: 16),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text('$rate INR', style: const TextStyle(fontFamily: _font, fontSize: 17, fontWeight: FontWeight.w900, color: _navy)),
+                                const SizedBox(height: 2),
+                                Row(
+                                  children: [
+                                    const Text('Indian Rupee', style: TextStyle(fontFamily: _font, fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w700)),
+                                    const SizedBox(width: 6),
+                                    ClipOval(child: Image.asset('assets/flags/in.png', width: 14, height: 14, fit: BoxFit.cover)),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Foreign Currency Info
-                    Row(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: Image.asset(item.flagAsset, width: 28, height: 28, fit: BoxFit.cover),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          '1 ${item.code}',
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-
-                    const Icon(Icons.arrow_forward, color: Colors.grey, size: 20),
-
-                    // INR Info
-                    Row(
-                      children: [
-                        Text(
-                          '$rate INR',
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF16305C)),
-                        ),
-                        const SizedBox(width: 12),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: Image.asset('assets/flags/in.png', width: 28, height: 28, fit: BoxFit.cover),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
         );
       },
     );
@@ -159,88 +179,36 @@ class _CurrencyRateViewState extends State<CurrencyRateView> {
 
   Widget _buildShimmerLoading() {
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       itemCount: 8,
-      itemBuilder: (context, index) {
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              )
-            ],
-          ),
-          child: Shimmer(
-            duration: const Duration(seconds: 2),
-            interval: const Duration(seconds: 1),
-            color: Colors.grey.shade300,
-            colorOpacity: 0.3,
-            enabled: true,
-            direction: const ShimmerDirection.fromLTRB(),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Container(
-                      width: 60,
-                      height: 16,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                  ],
-                ),
-                Container(
-                  width: 20,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                Row(
-                  children: [
-                    Container(
-                      width: 80,
-                      height: 16,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Container(
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+      itemBuilder: (context, index) => Shimmer(
+        duration: const Duration(seconds: 2),
+        color: Colors.grey.shade300,
+        child: Container(
+          height: 80,
+          margin: const EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24)),
+        ),
+      ),
+    );
+  }
+}
+
+class _FadeSlide extends StatelessWidget {
+  final Widget child;
+  final int index;
+  const _FadeSlide({required this.child, this.index = 0});
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: Duration(milliseconds: 400 + index * 50),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) => Opacity(
+        opacity: value.clamp(0.0, 1.0),
+        child: Transform.translate(offset: Offset(0, 20 * (1 - value)), child: child),
+      ),
+      child: child,
     );
   }
 }

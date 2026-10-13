@@ -1,0 +1,26 @@
+{
+  "" : {
+    "const-values" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/AppCheckCore.build/Objects-normal/arm64/AppCheckCore-primary.swiftconstvalues",
+    "dependencies" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/AppCheckCore.build/Objects-normal/arm64/AppCheckCore-primary.d",
+    "diagnostics" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/AppCheckCore.build/Objects-normal/arm64/AppCheckCore-primary.dia",
+    "emit-module-dependencies" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/AppCheckCore.build/Objects-normal/arm64/AppCheckCore-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/AppCheckCore.build/Objects-normal/arm64/AppCheckCore-primary-emit-module.dia",
+    "pch" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/AppCheckCore.build/Objects-normal/arm64/AppCheckCore-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/AppCheckCore.build/Objects-normal/arm64/AppCheckCore-primary.swiftdeps"
+  },
+  "/Users/apple/studioprojects/payfxglobal/ios/Pods/AppCheckCore/AppCheckRecaptchaProvider/Sources/Public/AppCheckRecaptchaProvider.swift" : {
+    "index-unit-output-path" : "/Pods.build/Release-iphoneos/AppCheckCore.build/Objects-normal/arm64/AppCheckRecaptchaProvider.o",
+    "llvm-bc" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/AppCheckCore.build/Objects-normal/arm64/AppCheckRecaptchaProvider.bc",
+    "object" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/AppCheckCore.build/Objects-normal/arm64/AppCheckRecaptchaProvider.o"
+  },
+  "/Users/apple/studioprojects/payfxglobal/ios/Pods/AppCheckCore/AppCheckRecaptchaProvider/Sources/RecaptchaAPIService.swift" : {
+    "index-unit-output-path" : "/Pods.build/Release-iphoneos/AppCheckCore.build/Objects-normal/arm64/RecaptchaAPIService.o",
+    "llvm-bc" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/AppCheckCore.build/Objects-normal/arm64/RecaptchaAPIService.bc",
+    "object" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/AppCheckCore.build/Objects-normal/arm64/RecaptchaAPIService.o"
+  },
+  "/Users/apple/studioprojects/payfxglobal/ios/Pods/AppCheckCore/AppCheckRecaptchaProvider/Sources/RecaptchaTokenGenerator.swift" : {
+    "index-unit-output-path" : "/Pods.build/Release-iphoneos/AppCheckCore.build/Objects-normal/arm64/RecaptchaTokenGenerator.o",
+    "llvm-bc" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/AppCheckCore.build/Objects-normal/arm64/RecaptchaTokenGenerator.bc",
+    "object" : "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/AppCheckCore.build/Objects-normal/arm64/RecaptchaTokenGenerator.o"
+  }
+}

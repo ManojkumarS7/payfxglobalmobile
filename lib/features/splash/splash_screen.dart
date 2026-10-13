@@ -5,7 +5,7 @@ import 'package:payfxglobal/widgets/custom_loading_indicator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:payfxglobal/utils/user_storage.dart';
 
-import '../auth/view/login_screen.dart';
+import '../auth/view/login_screen.dart' hide LoadingOverlay;
 
 
 class SplashScreen extends StatefulWidget {

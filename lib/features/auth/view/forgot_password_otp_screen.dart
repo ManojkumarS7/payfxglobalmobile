@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:payfxglobal/paystudy/core/constants/app_snackbar.dart';
-import 'package:payfxglobal/widgets/custom_app_bar.dart';
-import 'package:payfxglobal/widgets/custom_button.dart';
+import 'package:payfxglobal/widgets/app_snackbar.dart';
 import 'package:payfxglobal/widgets/custom_loading_indicator.dart';
-
+import '../../../utils/app_theme.dart';
 import '../service/forgot_password_api_service.dart';
 import '../viewmodel/forgot_password_otp_view_model.dart';
 
@@ -24,14 +22,17 @@ class _ForgotPasswordOtpScreenState extends State<ForgotPasswordOtpScreen> {
   late ForgotPasswordOtpViewModel vm;
   String? email;
 
+  // ---- Palette (Matched with Dashboard) ----
+  // static const Color _navy = Color(0xFF16305C);
+  static const Color _ink = Color(0xFF0B1B3A);
+  static const Color _accent = Color(0xFFFFC72C);
+  static const Color _bg = Color(0xFFF5F7FB);
+  static const String _font = 'Satoshi';
+
   @override
   void initState() {
     super.initState();
-
-    vm = ForgotPasswordOtpViewModel(
-      apiService: ForgotPasswordApiService(),
-    );
-
+    vm = ForgotPasswordOtpViewModel(apiService: ForgotPasswordApiService());
     for (final controller in vm.otpControllers) {
       controller.addListener(vm.validateOtp);
     }
@@ -40,9 +41,7 @@ class _ForgotPasswordOtpScreenState extends State<ForgotPasswordOtpScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-
     final args = ModalRoute.of(context)?.settings.arguments;
-
     if (args is Map && args['email'] != null) {
       email = args['email'].toString();
     } else {
@@ -52,41 +51,16 @@ class _ForgotPasswordOtpScreenState extends State<ForgotPasswordOtpScreen> {
 
   Future<void> _verifyOtp() async {
     try {
-      final response = await vm.verifyOtp(
-        email: email ?? '',
-      );
-
+      final response = await vm.verifyOtp(email: email ?? '');
       if (!mounted) return;
-
       if (response['success'] == true || response['status'] == 'success') {
-        AppSnackbar.show(
-          context,
-          'OTP verified successfully',
-          success: true,
-        );
-
-        Navigator.pushReplacementNamed(
-          context,
-          '/forgot-password-reset',
-          arguments: {
-            'email': email,
-          },
-        );
+        AppSnackbar.show(context, 'Verification successful', success: true);
+        Navigator.pushReplacementNamed(context, '/forgot-password-reset', arguments: {'email': email});
       } else {
-        AppSnackbar.show(
-          context,
-          response['message'] ?? 'Invalid OTP',
-          success: false,
-        );
+        AppSnackbar.show(context, response['message'] ?? 'Invalid code', success: false);
       }
     } catch (e) {
-      if (!mounted) return;
-
-      AppSnackbar.show(
-        context,
-        'Server error. Please try again.',
-        success: false,
-      );
+      if (mounted) AppSnackbar.show(context, 'Server error. Please try again.', success: false);
     }
   }
 
@@ -98,122 +72,164 @@ class _ForgotPasswordOtpScreenState extends State<ForgotPasswordOtpScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const primaryColor = Color.fromARGB(255, 235, 202, 83);
-
+    int i = 0;
     return AnimatedBuilder(
       animation: vm,
       builder: (context, _) {
         return Scaffold(
-          appBar: const AppPrimaryAppBar(
-            title: 'OTP Verification',
+          backgroundColor: _bg,
+          appBar: AppBar(
+            backgroundColor: _bg,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: _ink, size: 20),
+              onPressed: () => Navigator.pop(context),
+            ),
           ),
           body: Stack(
             children: [
-              Container(
-                color: Colors.white,
+              SafeArea(
                 child: SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 16),
-
-                        const Text(
-                          'Enter the verification\ncode you received',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                            height: 1.2,
-                            fontFamily: 'Satoshi',
-                          ),
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _FadeSlide(
+                        index: i++,
+                        child: const Text(
+                          'Verify Reset Code',
+                          style: TextStyle(fontFamily: _font, fontSize: 28, fontWeight: FontWeight.w900, color: _ink, height: 1.2, letterSpacing: -0.5),
                         ),
-
-                        const SizedBox(height: 12),
-
-                        const Text(
-                          'Please enter the 6-digit code we sent to your email id',
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: Colors.black54,
-                            fontFamily: 'Satoshi',
-                          ),
+                      ),
+                      const SizedBox(height: 12),
+                      _FadeSlide(
+                        index: i++,
+                        child: Text(
+                          'Please enter the 6-digit verification code sent to ${email ?? "your email"}.',
+                          style: TextStyle(fontFamily: _font, fontSize: 15, color: Colors.grey.shade600, fontWeight: FontWeight.w600),
                         ),
-
-                        const SizedBox(height: 32),
-
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: List.generate(6, (i) {
-                            return Container(
-                              width: 45,
-                              height: 50,
-                              margin: EdgeInsets.only(right: i < 5 ? 12 : 0),
-                              child: TextField(
-                                controller: vm.otpControllers[i],
-                                focusNode: vm.otpFocusNodes[i],
-                                keyboardType: TextInputType.number,
-                                textAlign: TextAlign.center,
-                                maxLength: 1,
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                decoration: InputDecoration(
-                                  counterText: '',
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                    borderSide: const BorderSide(
-                                      color: Colors.black12,
+                      ),
+                      const SizedBox(height: 40),
+                      _FadeSlide(
+                        index: i++,
+                        child: Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(28), boxShadow: [BoxShadow(color:  AppTheme.PrimaryColor.withOpacity(0.06), blurRadius: 16, offset: const Offset(0, 8))]),
+                          child: Column(
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: List.generate(6, (index) {
+                                  return SizedBox(
+                                    width: 44,
+                                    height: 56,
+                                    child: TextField(
+                                      controller: vm.otpControllers[index],
+                                      focusNode: vm.otpFocusNodes[index],
+                                      textAlign: TextAlign.center,
+                                      keyboardType: TextInputType.number,
+                                      maxLength: 1,
+                                      style: const TextStyle(fontFamily: _font, fontSize: 20, fontWeight: FontWeight.w800, color: _ink),
+                                      decoration: InputDecoration(
+                                        counterText: '',
+                                        filled: true,
+                                        fillColor: _bg,
+                                        contentPadding: EdgeInsets.zero,
+                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: _accent, width: 2)),
+                                      ),
+                                      onChanged: (value) => vm.onOtpChanged(index, value),
                                     ),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                    borderSide: const BorderSide(
-                                      color: Colors.black12,
-                                    ),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                    borderSide: const BorderSide(
-                                      color: primaryColor,
-                                      width: 2,
-                                    ),
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    vertical: 12,
-                                  ),
-                                ),
-                                onChanged: (value) =>
-                                    vm.onOtpChanged(i, value),
+                                  );
+                                }),
                               ),
-                            );
-                          }),
+                              const SizedBox(height: 32),
+                              _Pressable(
+                                onTap: vm.isButtonEnabled && !vm.isLoading ? _verifyOtp : null,
+                                child: Container(
+                                  width: double.infinity,
+                                  height: 56,
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: vm.isButtonEnabled ?  AppTheme.PrimaryColor : Colors.grey.shade300,
+                                    borderRadius: BorderRadius.circular(30),
+                                    boxShadow: vm.isButtonEnabled ? [BoxShadow(color:  AppTheme.PrimaryColor.withOpacity(0.2), blurRadius: 12, offset: const Offset(0, 6))] : [],
+                                  ),
+                                  child: vm.isLoading
+                                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
+                                      : const Text('Verify Code', style: TextStyle(fontFamily: _font, fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-
-                        const SizedBox(height: 32),
-
-                        AppPrimaryButton(
-                          title: 'Verify',
-                          loading: vm.isLoading,
-                          onPressed: vm.isButtonEnabled && !vm.isLoading
-                              ? _verifyOtp
-                              : null,
-                        ),
-
-                        const SizedBox(height: 24),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 30),
+                    ],
                   ),
                 ),
               ),
-
               if (vm.isLoading) const LoadingOverlay(),
             ],
           ),
         );
       },
+    );
+  }
+}
+
+class LoadingOverlay extends StatelessWidget {
+  const LoadingOverlay({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return Container(color: Colors.black.withOpacity(0.2), child: const Center(child: CustomLoadingIndicator()));
+  }
+}
+
+class _FadeSlide extends StatelessWidget {
+  final Widget child;
+  final int index;
+  const _FadeSlide({required this.child, this.index = 0});
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: Duration(milliseconds: 450 + index * 90),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) => Opacity(
+        opacity: value.clamp(0.0, 1.0),
+        child: Transform.translate(offset: Offset(0, 24 * (1 - value)), child: child),
+      ),
+      child: child,
+    );
+  }
+}
+
+class _Pressable extends StatefulWidget {
+  final Widget child;
+  final VoidCallback? onTap;
+  const _Pressable({required this.child, this.onTap});
+  @override
+  State<_Pressable> createState() => _PressableState();
+}
+
+class _PressableState extends State<_Pressable> {
+  bool _down = false;
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) => setState(() => _down = true),
+      onTapCancel: () => setState(() => _down = false),
+      onTapUp: (_) => setState(() => _down = false),
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _down ? 0.97 : 1,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: widget.child,
+      ),
     );
   }
 }

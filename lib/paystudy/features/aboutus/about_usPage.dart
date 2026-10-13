@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:payfxglobal/paystudy/core/constants/app_colors.dart';
+import 'package:payfxglobal/utils/app_theme.dart';
 
 class AboutUspage extends StatefulWidget {
   const AboutUspage({super.key});
@@ -9,362 +9,155 @@ class AboutUspage extends StatefulWidget {
 }
 
 class _AboutUspageState extends State<AboutUspage> {
+  // ---- Palette (Matched with Dashboard) ----
+  static const Color _navy = AppTheme.PrimaryColor;
+  static const Color _ink = Color(0xFF0B1B3A);
+  static const Color _accent = Color(0xFF0B1B3A);
+  static const Color _bg = Color(0xFFF5F7FB);
+  static const String _font = 'Satoshi';
+
   @override
   Widget build(BuildContext context) {
+    int i = 0;
     return Scaffold(
+      backgroundColor: _bg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        scrolledUnderElevation: 0.0,
-        surfaceTintColor: Colors.transparent,
+        backgroundColor: _bg,
         elevation: 0,
+        centerTitle: false,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.TextColor),
-          onPressed: () => Navigator.of(context).pop(),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: _ink, size: 20),
+          onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          'About Us',
-          style: TextStyle(
-            color: AppColors.TextColor,
-            fontSize: 20,
-            fontWeight: FontWeight.w500,
-            fontFamily: 'Satoshi', // Add this line
-          ),
+          'About PayFX',
+          style: TextStyle(fontFamily: _font, fontSize: 22, fontWeight: FontWeight.w800, color: _ink, letterSpacing: -0.5),
         ),
-        centerTitle: true,
       ),
-
-      backgroundColor: Colors.white,
-
       body: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.all(20),
-          child: SizedBox(
-            width: double.infinity,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-
-              children: [
-                Center(
-                  child: Image.asset('assets/images/payfx.png', height: 100),
-                ),
-
-                const SizedBox(height: 20),
-
-                Text(
-                  'About Us',
-                  style: TextStyle(
-                    color: AppColors.PrimaryColor,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    fontFamily: 'Satoshi', // Add this line
-                  ),
-                ),
-
-                const SizedBox(height: 10),
-
-                Text(
-                  'At PayFX Global, the goal is to revolutionize cross-border payments for the Indian diaspora by offering an instant, web & app-first money transfer platform built on strong banking and card-network partnerships. The platform focuses on delivering a seamless experience end- to-end, from onboarding to settlement, so users can support loved ones with confidence.',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Satoshi',
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.TextColor,
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                Text(
-                  'Our Mission',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontFamily: 'Satoshi',
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.PrimaryColor,
-                  ),
-                ),
-
-                const SizedBox(height: 10),
-
-                Text(
-                  'A safe, reliable and efficient international payment system is a pre-requisite for economic development. We strive to make any-where-any-currency money transfer seamless and safe by providing an efficient technology platform for all users.',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Satoshi',
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.TextColor,
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                Text(
-                  'Our Vision',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontFamily: 'Satoshi',
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.PrimaryColor,
-                  ),
-                ),
-
-                const SizedBox(height: 10),
-
-                Text(
-                  'Our vision is to become the most trusted bridge between a remitter and a beneficiary of any financial payment requirement across the globe. Keeping pace with dynamic changes in international payments echo-system, we shall create, curate and develop appropriate technology with due regard to legal and regulatory frameworks to make PayUni a leading global international payment solution provider.',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Satoshi',
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.TextColor,
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                Container(
-                  height: 150,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppColors.TextColor),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: const [
-                      _StatItem(
-                        value: '180k +',
-                        title: 'Happy',
-                        subtitle: 'Customers',
-                      ),
-                      _StatItem(
-                        value: '50 +',
-                        title: 'Currencies',
-                        subtitle: 'Offered',
-                      ),
-                      _StatItem(
-                        value: '1M +',
-                        title: 'Customers',
-                        subtitle: 'Globally',
-                      ),
-                      _StatItem(
-                        value: '30k +',
-                        title: '5 - Star',
-                        subtitle: 'Reviews',
-                      ),
-                    ],
-                  ),
-                ),
-
-                SizedBox(height: 30),
-
-                Align(
-                  alignment: Alignment.center,
-                  child: Text(
-                    'Popular Countries',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontFamily: 'Satoshi',
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.PrimaryColor,
-                    ),
-                  ),
-                ),
-
-                SizedBox(height: 20),
-
-                GridView.count(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 3,
-                  mainAxisSpacing: 20,
-                  crossAxisSpacing: 20,
-                  children: const [
-                    CountryItem(image: 'assets/flags/us.png',
-                        title: 'USA'
-                    ),
-                    CountryItem(
-                      image: 'assets/flags/canada.png',
-                      title: 'Canada',
-                    ),
-                    CountryItem(
-                      image: 'assets/flags/uk.png',
-                      title: 'UK',
-                    ),
-                    CountryItem(
-                      image: 'assets/flags/germany.png',
-                      title: 'Germany',
-                    ),
-                    CountryItem(
-                      image: 'assets/flags/newzeland.png',
-                      title: 'New Zealand',
-                    ),
-                    CountryItem(
-                      image: 'assets/flags/france.png',
-                      title: 'France',
-                    ),
-
-                  ],
-                ),
-
-                SizedBox(height: 25),
-
-
-                Container(
-                  width: double.infinity,
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _FadeSlide(
+              index: i++,
+              child: Center(
+                child: Container(
                   padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF3A3A3A),
-                    borderRadius: BorderRadius.circular(28),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Address',
-                        style: TextStyle(
-                          fontSize: 26,
-                          fontFamily: 'Satoshi',
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white,
-                        ),
-                      ),
-
-                      const SizedBox(height: 8),
-
-
-                      Container(
-                        width: 120,
-                        height: 2,
-                        color: AppColors.PrimaryColor,
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      // Content
-                      _addressText('PayFX Fintech Solutions Private Limited'),
-                      _addressText('303,304, A Block, 3rd Floor,'),
-                      _addressText(
-                        'Raheja Center, Avinashi Rd, Near The Residency Hotel, Coimbatore.',
-                      ),
-                      _addressText('Pincode: 641018'),
-
-                      const SizedBox(height: 16),
-
-                      _linkText('Email: care@paystudy.in'),
-                      _linkText('Phone: +91 9952477555'),
-
-                      const SizedBox(height: 16),
-
-                      _linkText(
-                        'Branches: Bangalore - Coimbatore - Chennai - Delhi - Gujarat - '
-                        'Hyderabad - Kochi - Mumbai - Pondicherry - Pune - Punjab - Vijayawada',
-                      ),
-                    ],
-                  ),
+                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(32), boxShadow: [BoxShadow(color: _navy.withOpacity(0.05), blurRadius: 16, offset: const Offset(0, 8))]),
+                  child: Image.asset('assets/images/payfx.png', height: 80, fit: BoxFit.contain),
                 ),
-              ],
+              ),
             ),
-          ),
+            const SizedBox(height: 32),
+            _FadeSlide(index: i++, child: _buildContentCard('Our Story', 'PayFX Global is revolutionizing cross-border payments for the Indian diaspora. Built on strong banking partnerships, we offer a seamless, secure, and instant money transfer experience.')),
+            const SizedBox(height: 20),
+            _FadeSlide(index: i++, child: _buildContentCard('Our Mission', 'We strive to make "any-where-any-currency" money transfer simple and safe by providing a cutting-edge technology platform for students and individuals worldwide.')),
+            const SizedBox(height: 20),
+            _FadeSlide(index: i++, child: _buildContentCard('Our Vision', 'To become the most trusted global bridge for all international financial requirements, maintaining absolute compliance with regulatory frameworks.')),
+            const SizedBox(height: 32),
+            _FadeSlide(index: i++, child: const Text('Popular Countries', style: TextStyle(fontFamily: _font, fontSize: 18, fontWeight: FontWeight.w800, color: _ink))),
+            const SizedBox(height: 16),
+            _FadeSlide(index: i++, child: _buildCountryGrid()),
+            const SizedBox(height: 32),
+            _FadeSlide(index: i++, child: _buildAddressCard()),
+            const SizedBox(height: 40),
+          ],
         ),
       ),
     );
   }
 
-  Widget _addressText(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Text(
-        '• $text',
-        style: const TextStyle(
-          fontSize: 16,
-          height: 1.5,
-          fontFamily: 'Satoshi',
-          color: Colors.white,
+  Widget _buildContentCard(String title, String body) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(22),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(28), boxShadow: [BoxShadow(color: _navy.withOpacity(0.05), blurRadius: 14, offset: const Offset(0, 6))]),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontFamily: _font, fontSize: 18, fontWeight: FontWeight.w800, color: _navy)),
+            const SizedBox(height: 10),
+            Text(body, style: TextStyle(fontFamily: _font, fontSize: 14, color: Colors.grey.shade700, height: 1.6, fontWeight: FontWeight.w600)),
+          ],
+        ),
+      );
+
+  Widget _buildCountryGrid() {
+    final countries = [
+      ('USA', 'assets/flags/us.png'),
+      ('Canada', 'assets/flags/ca.png'),
+      ('UK', 'assets/flags/uk.png'),
+      ('Germany', 'assets/flags/germany.png'),
+      ('Australia', 'assets/flags/australia.png'),
+      ('France', 'assets/flags/france.png'),
+    ];
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3, crossAxisSpacing: 16, mainAxisSpacing: 16, childAspectRatio: 0.9),
+      itemCount: countries.length,
+      itemBuilder: (context, idx) => Container(
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: _navy.withOpacity(0.04), blurRadius: 10)]),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ClipOval(child: Image.asset(countries[idx].$2, width: 36, height: 36, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.flag_rounded, color: _navy))),
+            const SizedBox(height: 10),
+            Text(countries[idx].$1, style: const TextStyle(fontFamily: _font, fontSize: 12, fontWeight: FontWeight.w800, color: _ink)),
+          ],
         ),
       ),
     );
   }
 
-  Widget _linkText(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Text(
-        '• $text',
-        style: const TextStyle(
-          fontSize: 16,
-          height: 1.5,
-          fontFamily: 'Satoshi',
-          color: Colors.white,
-          decoration: TextDecoration.underline,
+  Widget _buildAddressCard() => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(color: _navy, borderRadius: BorderRadius.circular(32), boxShadow: [BoxShadow(color: _navy.withOpacity(0.2), blurRadius: 16, offset: const Offset(0, 8))]),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Get in Touch', style: TextStyle(fontFamily: _font, fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white)),
+            const SizedBox(height: 8),
+            Container(width: 40, height: 3, decoration: BoxDecoration(color: _accent, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 24),
+            _contactItem(Icons.location_on_rounded, 'PayFX Fintech Solutions Private Limited\n303, Raheja Center, Avinashi Rd, Coimbatore - 641018'),
+            _contactItem(Icons.email_rounded, 'care@payfxglobal.com'),
+            _contactItem(Icons.phone_rounded, '+91 99524 77555'),
+            _contactItem(Icons.business_rounded, 'Branches: Bangalore, Chennai, Delhi, Mumbai, Pune, Kochi, Hyderabad.'),
+          ],
         ),
-      ),
-    );
-  }
+      );
+
+  Widget _contactItem(IconData icon, String text) => Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: _accent, size: 20),
+            const SizedBox(width: 14),
+            Expanded(child: Text(text, style: const TextStyle(fontFamily: _font, fontSize: 13, color: Colors.white, height: 1.4, fontWeight: FontWeight.w600))),
+          ],
+        ),
+      );
 }
 
-class CountryItem extends StatelessWidget {
-  final String image;
-  final String title;
-
-  const CountryItem({super.key, required this.image, required this.title});
-
+class _FadeSlide extends StatelessWidget {
+  final Widget child;
+  final int index;
+  const _FadeSlide({required this.child, this.index = 0});
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Image.asset(image, height: 50),
-        const SizedBox(height: 15),
-        Text(
-          title,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 14,
-            fontFamily: 'Satoshi',
-            fontWeight: FontWeight.w600,
-            color: AppColors.PrimaryColor,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _StatItem extends StatelessWidget {
-  final String value;
-  final String title;
-  final String subtitle;
-
-  const _StatItem({
-    required this.value,
-    required this.title,
-    required this.subtitle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 20,
-            fontFamily: 'Satoshi',
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          title,
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w400),
-        ),
-        Text(
-          subtitle,
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w400),
-        ),
-      ],
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: Duration(milliseconds: 400 + index * 80),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) => Opacity(
+        opacity: value.clamp(0.0, 1.0),
+        child: Transform.translate(offset: Offset(0, 20 * (1 - value)), child: child),
+      ),
+      child: child,
     );
   }
 }

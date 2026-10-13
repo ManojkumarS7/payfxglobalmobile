@@ -1,0 +1,23 @@
+{
+  "version": 0,
+  "use-external-names": false,
+  "case-sensitive": false,
+  "roots": [{
+    "type": "directory",
+    "name": "/Users/apple/studioprojects/payfxglobal/ios/build/Release-iphoneos/PromisesSwift/Promises.framework/Modules",
+    "contents": [{
+      "type": "file",
+      "name": "module.modulemap",
+      "external-contents": "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/PromisesSwift.build/unextended-module.modulemap",
+    }]
+    },
+    {
+    "type": "directory",
+    "name": "/Users/apple/studioprojects/payfxglobal/ios/build/Release-iphoneos/PromisesSwift/Promises.framework/Headers",
+    "contents": [{
+      "type": "file",
+      "name": "Promises-Swift.h",
+      "external-contents": "/Users/apple/studioprojects/payfxglobal/ios/build/Pods.build/Release-iphoneos/PromisesSwift.build/unextended-interface-header.h",
+    }]
+  }]
+}

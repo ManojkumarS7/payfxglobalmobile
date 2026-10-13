@@ -17,6 +17,7 @@ import 'package:payfxglobal/services/api_service.dart';
 import 'package:payfxglobal/utils/app_theme.dart';
 import 'package:payfxglobal/utils/app_constants.dart';
 import 'features/auth/view/login_screen.dart';
+import 'features/auth/view/account_deactivated_screen.dart';
 import 'package:payfxglobal/features/welcome/welcome_screen.dart';
 import 'package:payfxglobal/features/auth/view/email_entry_screen.dart';
 import 'features/dashboard/view/dashboard_view.dart';
@@ -39,6 +40,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'features/payment_tcs/view/payment_tcs_page.dart';
 import 'features/auth/view/sender_detail_screen.dart';
+import 'package:upgrader/upgrader.dart';
 
 
 
@@ -96,6 +98,7 @@ class PayFXGlobal extends StatelessWidget {
         '/intro': (context) => const IntroScreen(),
         '/welcome': (context) => const WelcomeScreen(),
         '/login': (context) => const LoginScreen(),
+        '/account-deactivated': (context) => const AccountDeactivatedScreen(),
         '/email-entry': (context) => const EmailEntryScreen(),
         '/forgot-password': (context) => const ForgotPasswordScreen(),
         '/forgot-password-otp': (context) => const ForgotPasswordOtpScreen(),
