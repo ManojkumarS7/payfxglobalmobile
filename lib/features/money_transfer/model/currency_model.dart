@@ -36,9 +36,16 @@ class Currency {
     'DKK': 'dk',
     'NOK': 'no',
     'THB': 'th',
-    'CNY': 'cn',
+    'CN Y': 'cn',
     'SAR': 'sau',
-    'MYR': 'mal'
+    'MYR': 'mal',
+    'RUB': 'rus',
+    'IDR': 'ind',
+    'PHP': 'php',
+    'KWD' :'kwd',
+    'CNY' : 'cny',
+    'KES' : 'kes',
+    'OMR' : 'omr'
   };
 
   String get flagAsset {

@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:payfxglobal/features/transaction_recepient/service/transaction_recepient_service.dart';
+import '../../../services/error_report_service.dart';
 
 const double kTcsRateNone = 0.00;
 const double kTcsRateEducationMedical = 0.02;
@@ -21,22 +23,70 @@ class TransactionReceiptViewModel extends ChangeNotifier {
 
   double activeTcsRate = kTcsRateEducationMedical;
 
+  bool _isFetchingRecipients = false;
+
   Future<void> init() async {
-    await fetchRecipients();
-    await fetchReasons();
+    isLoading = true;
+    notifyListeners();
+    try {
+      await fetchRecipients(showLoading: false);
+      await fetchReasons();
+    } catch (e, stackTrace) {
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Transaction Recipients',
+          operation: 'init',
+        ),
+      );
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
   }
 
-  Future<void> fetchRecipients() async {
-    recipients = await service.fetchRecipients();
-    notifyListeners();
+  Future<void> fetchRecipients({bool showLoading = false}) async {
+    if (_isFetchingRecipients) return;
+    _isFetchingRecipients = true;
+    if (showLoading) {
+      isLoading = true;
+      notifyListeners();
+    }
+    try {
+      recipients = await service.fetchRecipients();
+    } catch (e, stackTrace) {
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Transaction Recipients',
+          operation: 'fetch_recipients',
+        ),
+      );
+    } finally {
+      _isFetchingRecipients = false;
+      if (showLoading) {
+        isLoading = false;
+      }
+      notifyListeners();
+    }
   }
 
   Future<void> fetchReasons() async {
     try {
       reasons = await service.fetchReasons();
       notifyListeners();
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('Error fetching reasons: $e');
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Transaction Recipients',
+          operation: 'fetch_reasons',
+        ),
+      );
     }
   }
 
@@ -68,14 +118,37 @@ class TransactionReceiptViewModel extends ChangeNotifier {
         recipientId: recipientId,
       );
 
-      responseData = {
-        ...responseData ?? {},
-        ...response['data'],
-      };
-
-      return true;
-    } catch (e) {
+      final success = response['success'] == true || response['status'] == 'success';
+      if (success) {
+        responseData = {
+          ...responseData ?? {},
+          ...response['data'],
+        };
+        return true;
+      } else {
+        final message = response['message']?.toString() ?? 'Auto select recipient failed';
+        unawaited(
+          ErrorReportService.instance.reportError(
+            error: Exception('Auto Select Recipient API Error: $message'),
+            stackTrace: StackTrace.current,
+            screen: 'Transaction Recipients',
+            operation: 'auto_select_recipient',
+            method: 'POST',
+          ),
+        );
+        return false;
+      }
+    } catch (e, stackTrace) {
       debugPrint('Auto select recipient failed: $e');
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Transaction Recipients',
+          operation: 'auto_select_recipient',
+          method: 'POST',
+        ),
+      );
       return false;
     } finally {
       isLoading = false;
@@ -101,16 +174,42 @@ class TransactionReceiptViewModel extends ChangeNotifier {
       final int? recipientId = toInt(recipient['id']);
 
       if (userIdInt != null && transactionId != null && recipientId != null) {
-        await service.selectRecipient(
+        final response = await service.selectRecipient(
           userId: userIdInt,
           transactionId: transactionId,
           recipientId: recipientId,
         );
+
+        print(response);
+        
+        final success = response['success'] == true || response['status'] == 'success';
+        if (!success) {
+          final message = response['message']?.toString() ?? 'Select recipient failed';
+          unawaited(
+            ErrorReportService.instance.reportError(
+              error: Exception('Select Recipient API Error: $message'),
+              stackTrace: StackTrace.current,
+              screen: 'Transaction Recipients',
+              operation: 'select_recipient_for_payment',
+              method: 'POST',
+            ),
+          );
+          return false;
+        }
       }
 
       return true;
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('Select recipient error: $e');
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Transaction Recipients',
+          operation: 'select_recipient_for_payment',
+          method: 'POST',
+        ),
+      );
       return false;
     } finally {
       isLoading = false;
@@ -129,15 +228,34 @@ class TransactionReceiptViewModel extends ChangeNotifier {
         recipientId: recipientId,
       );
 
-      if (response['success'] == true) {
+      if (response['success'] == true || response['status'] == 'success') {
         await fetchRecipients();
         return true;
+      } else {
+        final message = response['message']?.toString() ?? 'Delete recipient failed';
+        unawaited(
+          ErrorReportService.instance.reportError(
+            error: Exception('Delete Recipient API Error: $message'),
+            stackTrace: StackTrace.current,
+            screen: 'Transaction Recipients',
+            operation: 'delete_recipient',
+            method: 'POST',
+          ),
+        );
+        return false;
       }
-
-      return false;
-    } catch (e) {
+    } catch (e, stackTrace) {
       print(e);
       debugPrint('Delete recipient error: $e');
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Transaction Recipients',
+          operation: 'delete_recipient',
+          method: 'POST',
+        ),
+      );
       return false;
     } finally {
       isLoading = false;

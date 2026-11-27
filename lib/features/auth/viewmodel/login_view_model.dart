@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
@@ -5,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../service/auth_api_service.dart';
+import '../../../services/error_report_service.dart';
 
 class LoginViewModel extends ChangeNotifier {
 
@@ -44,18 +46,39 @@ class LoginViewModel extends ChangeNotifier {
         fcmToken: fcmToken ?? '',
       );
 
+      final success = result['success'] == true || result['status'] == 'success';
+      if (!success) {
+        final message = result['message']?.toString() ?? 'Login failed';
+        unawaited(
+          ErrorReportService.instance.reportError(
+            error: Exception('Login API Error: $message'),
+            stackTrace: StackTrace.current,
+            screen: 'Login',
+            operation: 'login',
+            method: 'POST',
+          ),
+        );
+      }
+
       isLoading = false;
       notifyListeners();
 
       return result;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Login',
+          operation: 'login',
+          method: 'POST',
+        ),
+      );
       isLoading = false;
       notifyListeners();
       rethrow;
     }
   }
-
-
 
   Future<Map<String, dynamic>> handleGoogleSignIn() async {
     try {
@@ -92,11 +115,34 @@ class LoginViewModel extends ChangeNotifier {
         fcmToken: fcmToken ?? '',
       );
 
+      final success = result['success'] == true || result['status'] == 'success';
+      if (!success) {
+        final message = result['message']?.toString() ?? 'Google login failed';
+        unawaited(
+          ErrorReportService.instance.reportError(
+            error: Exception('Google Login API Error: $message'),
+            stackTrace: StackTrace.current,
+            screen: 'Login',
+            operation: 'google_login',
+            method: 'POST',
+          ),
+        );
+      }
+
       isLoading = false;
       notifyListeners();
 
       return result;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Login',
+          operation: 'google_login',
+          method: 'POST',
+        ),
+      );
       isLoading = false;
       notifyListeners();
       debugPrint('Google Sign-In Error: $e');
@@ -149,11 +195,25 @@ class LoginViewModel extends ChangeNotifier {
         email: appleCredential.email,
       );
 
+      final success = result['success'] == true || result['status'] == 'success';
+      if (!success) {
+        final message = result['message']?.toString() ?? 'Apple login failed';
+        unawaited(
+          ErrorReportService.instance.reportError(
+            error: Exception('Apple Login API Error: $message'),
+            stackTrace: StackTrace.current,
+            screen: 'Login',
+            operation: 'apple_login',
+            method: 'POST',
+          ),
+        );
+      }
+
       isLoading = false;
       notifyListeners();
 
       return result;
-    } on SignInWithAppleAuthorizationException catch (e) {
+    } on SignInWithAppleAuthorizationException catch (e, stackTrace) {
       isLoading = false;
       notifyListeners();
       debugPrint('Apple Sign-In Authorization Error: $e');
@@ -166,10 +226,19 @@ class LoginViewModel extends ChangeNotifier {
           errorStr.contains('canceled') || 
           errorStr.contains('cancelled')) {
         message = 'Apple Sign-In cancelled';
+      } else {
+        unawaited(
+          ErrorReportService.instance.reportError(
+            error: e,
+            stackTrace: stackTrace,
+            screen: 'Login',
+            operation: 'apple_login_auth',
+          ),
+        );
       }
       
       return {'success': false, 'message': message};
-    } catch (e) {
+    } catch (e, stackTrace) {
       isLoading = false;
       notifyListeners();
       debugPrint('Apple Sign-In Generic Error: $e');
@@ -183,6 +252,15 @@ class LoginViewModel extends ChangeNotifier {
                  errorStr.contains('canceled') || 
                  errorStr.contains('cancelled')) {
         message = 'Apple Sign-In cancelled';
+      } else {
+        unawaited(
+          ErrorReportService.instance.reportError(
+            error: e,
+            stackTrace: stackTrace,
+            screen: 'Login',
+            operation: 'apple_login_general',
+          ),
+        );
       }
       
       return {'success': false, 'message': message};

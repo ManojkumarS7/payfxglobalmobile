@@ -5,6 +5,7 @@ import 'package:payfxglobal/paystudy/core/constants/app_colors.dart';
 import 'package:payfxglobal/paystudy/core/constants/app_textfield.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:payfxglobal/paystudy/core/constants/app_snackbar.dart';
+import 'package:payfxglobal/utils/external_activity_service.dart';
 import 'dart:convert';
 
 class AccountOpening extends StatefulWidget {
@@ -89,7 +90,7 @@ class _AccountOpeningState extends State<AccountOpening> {
   }
 
   Future<void> pickFile(String type) async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
+    FilePickerResult? result = await ExternalActivityService.pickFiles(
       type: FileType.any,
     );
 

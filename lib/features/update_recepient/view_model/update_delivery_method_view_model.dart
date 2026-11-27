@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../model/reason_config.dart';
 import '../service/update_delivery_method_service.dart';
+import '../../../services/error_report_service.dart';
+import '../../../utils/external_activity_service.dart';
 
 const double kTcsRateNone = 0.00;
 const double kTcsRateEducationMedical = 0.02;
@@ -118,9 +121,7 @@ class UpdateDeliveryMethodViewModel extends ChangeNotifier {
   }
 
   double get nostroAmount {
-    final cfg = currentConfig;
-    if (cfg == null) return 0.0;
-    return cfg.showNostroWarning ? 1000.0 : 0.0;
+    return 0.0;
   }
 
   bool get isButtonEnabled {
@@ -163,10 +164,21 @@ class UpdateDeliveryMethodViewModel extends ChangeNotifier {
   }
 
   Future<void> initData() async {
-    await Future.wait([
-      fetchReasons(),
-      fetchCountries(),
-    ]);
+    try {
+      await Future.wait([
+        fetchReasons(),
+        fetchCountries(),
+      ]);
+    } catch (e, stackTrace) {
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Update Recipient',
+          operation: 'init_data',
+        ),
+      );
+    }
   }
 
   void setArgs(Map args) {
@@ -300,9 +312,17 @@ class UpdateDeliveryMethodViewModel extends ChangeNotifier {
       reasonConfigs.addAll(configs);
       reasonsLoading = false;
       notifyListeners();
-    } catch (e) {
+    } catch (e, stackTrace) {
       reasonsLoading = false;
       notifyListeners();
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Update Recipient',
+          operation: 'fetch_reasons',
+        ),
+      );
     }
   }
 
@@ -313,9 +333,17 @@ class UpdateDeliveryMethodViewModel extends ChangeNotifier {
       countries = List<Map<String, dynamic>>.from(result);
       countriesLoading = false;
       notifyListeners();
-    } catch (e) {
+    } catch (e, stackTrace) {
       countriesLoading = false;
       notifyListeners();
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Update Recipient',
+          operation: 'fetch_countries',
+        ),
+      );
     }
   }
 
@@ -331,9 +359,17 @@ class UpdateDeliveryMethodViewModel extends ChangeNotifier {
       universities = await apiService.getUniversitiesByCountry(countryId);
       universitiesLoading = false;
       notifyListeners();
-    } catch (e) {
+    } catch (e, stackTrace) {
       universitiesLoading = false;
       notifyListeners();
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Update Recipient',
+          operation: 'fetch_universities',
+        ),
+      );
     }
   }
 
@@ -382,9 +418,17 @@ class UpdateDeliveryMethodViewModel extends ChangeNotifier {
 
       isDataFetching = false;
       notifyListeners();
-    } catch (e) {
+    } catch (e, stackTrace) {
       isDataFetching = false;
       notifyListeners();
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Update Recipient',
+          operation: 'fetch_recipient_details',
+        ),
+      );
     }
   }
 
@@ -416,14 +460,25 @@ class UpdateDeliveryMethodViewModel extends ChangeNotifier {
   }
 
   Future<void> pickFile(String key) async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
-    );
+    try {
+      final result = await ExternalActivityService.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+      );
 
-    if (result != null && result.files.isNotEmpty) {
-      pickedFiles[key] = result.files.first;
-      notifyListeners();
+      if (result != null && result.files.isNotEmpty) {
+        pickedFiles[key] = result.files.first;
+        notifyListeners();
+      }
+    } catch (e, stackTrace) {
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Update Recipient',
+          operation: 'pick_file',
+        ),
+      );
     }
   }
 
@@ -455,8 +510,31 @@ class UpdateDeliveryMethodViewModel extends ChangeNotifier {
         files: pickedFiles,
       );
 
+      final success = response['success'] == true || response['status'] == 'success';
+      if (!success) {
+        final message = response['message']?.toString() ?? 'Failed to update recipient';
+        unawaited(
+          ErrorReportService.instance.reportError(
+            error: Exception('Update Recipient API Error: $message'),
+            stackTrace: StackTrace.current,
+            screen: 'Update Recipient',
+            operation: 'update_recipient',
+            method: 'POST',
+          ),
+        );
+      }
+
       return response;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Update Recipient',
+          operation: 'update_recipient',
+          method: 'POST',
+        ),
+      );
       rethrow;
     } finally {
       isSubmitting = false;
@@ -469,13 +547,6 @@ class UpdateDeliveryMethodViewModel extends ChangeNotifier {
     final calculatedTcs = calculateExactTcs(sendAmount, rate);
 
     double nostro = 0.0;
-    final name = getSelectedReasonName();
-
-    if (name.contains('tuition') ||
-        name.contains('tution') ||
-        name.contains('education')) {
-      nostro = 1000.0;
-    }
 
     return {
       ...response['data'] ?? {},

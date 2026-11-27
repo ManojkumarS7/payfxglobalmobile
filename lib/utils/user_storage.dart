@@ -1,16 +1,24 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class UserStorage {
+  static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
   static const String _key = 'user_data';
   static const String _userNameKey = 'user_full_name';
   static const String _userDobKey = 'user_dob';
 
-  // Save userData after login or KYC completion
+  // Save userData after login or KYC completion securely
   static Future<void> saveUserData(Map<String, dynamic> userData) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_key, jsonEncode(userData));
+    final encoded = jsonEncode(userData);
+    try {
+      await _secureStorage.write(key: _key, value: encoded);
+    } catch (e) {
+      debugPrint('SecureStorage write error, fallback to prefs: $e');
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_key, encoded);
+    }
 
     // Also extract and save name and DOB from pan_response if available
     try {
@@ -41,10 +49,10 @@ class UserStorage {
                       panResult['date_of_birth']?.toString();
 
           if (fullName != null && fullName.trim().isNotEmpty && fullName != '1') {
-            await prefs.setString(_userNameKey, fullName.trim());
+            await _secureStorage.write(key: _userNameKey, value: fullName.trim());
           }
           if (dob != null && dob.trim().isNotEmpty) {
-            await prefs.setString(_userDobKey, dob.trim());
+            await _secureStorage.write(key: _userDobKey, value: dob.trim());
           }
         }
       }
@@ -54,8 +62,16 @@ class UserStorage {
   }
 
   static Future<String?> getUserFullName() async {
-    final prefs = await SharedPreferences.getInstance();
-    final name = prefs.getString(_userNameKey);
+    String? name;
+    try {
+      name = await _secureStorage.read(key: _userNameKey);
+    } catch (_) {}
+
+    if (name == null || name.trim().isEmpty) {
+      final prefs = await SharedPreferences.getInstance();
+      name = prefs.getString(_userNameKey);
+    }
+
     if (name != null && name.trim().isNotEmpty && name != '1') return name.trim();
     
     // Fallback to customer name in main storage
@@ -95,15 +111,36 @@ class UserStorage {
   }
 
   static Future<String?> getUserDob() async {
-    final prefs = await SharedPreferences.getInstance();
-    final dob = prefs.getString(_userDobKey);
+    String? dob;
+    try {
+      dob = await _secureStorage.read(key: _userDobKey);
+    } catch (_) {}
+    if (dob == null || dob.trim().isEmpty) {
+      final prefs = await SharedPreferences.getInstance();
+      dob = prefs.getString(_userDobKey);
+    }
     return dob;
   }
 
-  // Fetch userData from storage
+  // Fetch userData from storage with secure migration
   static Future<Map<String, dynamic>> getUserData() async {
-    final prefs = await SharedPreferences.getInstance();
-    final String? raw = prefs.getString(_key);
+    String? raw;
+    try {
+      raw = await _secureStorage.read(key: _key);
+    } catch (_) {}
+
+    // Migration fallback from SharedPreferences if not in secure storage
+    if (raw == null || raw.isEmpty) {
+      final prefs = await SharedPreferences.getInstance();
+      raw = prefs.getString(_key);
+      if (raw != null && raw.isNotEmpty) {
+        try {
+          await _secureStorage.write(key: _key, value: raw);
+          await prefs.remove(_key); // Clean up unencrypted copy
+        } catch (_) {}
+      }
+    }
+
     if (raw == null || raw.isEmpty) return {};
     try {
       return Map<String, dynamic>.from(jsonDecode(raw));
@@ -114,6 +151,12 @@ class UserStorage {
 
   // Clear on logout
   static Future<void> clearUserData() async {
+    try {
+      await _secureStorage.delete(key: _key);
+      await _secureStorage.delete(key: _userNameKey);
+      await _secureStorage.delete(key: _userDobKey);
+    } catch (_) {}
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_key);
     await prefs.remove(_userNameKey);

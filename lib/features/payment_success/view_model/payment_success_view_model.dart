@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../service/payment_success_service.dart';
+import '../../../services/error_report_service.dart';
 
 class PaymentSuccessViewModel extends ChangeNotifier {
   final PaymentSuccessApiService apiService;
@@ -84,8 +86,18 @@ class PaymentSuccessViewModel extends ChangeNotifier {
         transactionId: transactionId,
       );
 
-      if (response['success'] != true) {
+      final success = response['success'] == true || response['status'] == 'success';
+      if (!success) {
         error = response['message'] ?? 'Failed to load details';
+        unawaited(
+          ErrorReportService.instance.reportError(
+            error: Exception('Fetch Payment Success Details API Error: $error'),
+            stackTrace: StackTrace.current,
+            screen: 'Payment Success',
+            operation: 'fetch_details',
+            method: 'POST',
+          ),
+        );
         isLoading = false;
         notifyListeners();
         return;
@@ -154,7 +166,7 @@ class PaymentSuccessViewModel extends ChangeNotifier {
         nostroAmount = 1000.0;
       }
 
-      totalPayable = sendAmount + nostroAmount;
+      totalPayable = sendAmount;
 
       final utr = data['utr_number']?.toString();
 
@@ -167,7 +179,16 @@ class PaymentSuccessViewModel extends ChangeNotifier {
 
       isLoading = false;
       notifyListeners();
-    } catch (e) {
+    } catch (e, stackTrace) {
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Payment Success',
+          operation: 'fetch_details',
+          method: 'POST',
+        ),
+      );
       error = 'Unable to load transaction details.';
       isLoading = false;
       notifyListeners();
@@ -184,7 +205,15 @@ class PaymentSuccessViewModel extends ChangeNotifier {
       await apiService.downloadInstructions(
         transactionId: transactionId,
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Payment Success',
+          operation: 'download_instructions',
+        ),
+      );
       rethrow;
     } finally {
       isDownloading = false;

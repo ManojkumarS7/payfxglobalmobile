@@ -11,6 +11,11 @@
     <!-- Camera if taking photo -->
     <uses-permission android:name="android.permission.CAMERA" />
 
+    <!-- Screen Orientation Feature -->
+    <uses-feature
+        android:name="android.hardware.screen.portrait"
+        android:required="false" />
+
     <application
         android:label="PayFX Global"
         android:name="${applicationName}"

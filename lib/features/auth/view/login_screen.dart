@@ -12,11 +12,14 @@ import 'package:payfxglobal/features/auth/viewmodel/login_view_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 
-class LoginScreen extends StatefulWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:payfxglobal/features/auth/presentation/providers/auth_provider.dart';
+
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 
   static Future<void> askBiometricPermission(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
@@ -95,7 +98,7 @@ class LoginScreen extends StatefulWidget {
   }
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   late LoginViewModel vm;
   final _formKey = GlobalKey<FormState>();
 
@@ -109,7 +112,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    vm = LoginViewModel(apiService: AuthApiService());
+    vm = LoginViewModel(apiService: ref.read(authApiServiceProvider));
   }
 
   @override

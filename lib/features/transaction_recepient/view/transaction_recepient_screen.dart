@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:payfxglobal/main.dart';
 import 'package:payfxglobal/services/api_service.dart';
 import 'package:payfxglobal/widgets/app_snackbar.dart';
 import 'package:payfxglobal/widgets/custom_loading_indicator.dart';
@@ -23,7 +24,8 @@ class TransactionReceiptScreen extends StatefulWidget {
       _TransactionReceiptScreenState();
 }
 
-class _TransactionReceiptScreenState extends State<TransactionReceiptScreen> {
+class _TransactionReceiptScreenState extends State<TransactionReceiptScreen>
+    with RouteAware {
   late TransactionReceiptViewModel vm;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
@@ -46,6 +48,10 @@ class _TransactionReceiptScreenState extends State<TransactionReceiptScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route != null) {
+      routeObserver.subscribe(this, route);
+    }
     final args = ModalRoute.of(context)?.settings.arguments;
     if (args is Map<String, dynamic>) {
       vm.setRouteData(args);
@@ -61,7 +67,14 @@ class _TransactionReceiptScreenState extends State<TransactionReceiptScreen> {
   }
 
   @override
+  void didPopNext() {
+    // Called whenever returning/coming back to this screen
+    vm.fetchRecipients(showLoading: true);
+  }
+
+  @override
   void dispose() {
+    routeObserver.unsubscribe(this);
     _searchController.dispose();
     vm.dispose();
     super.dispose();
@@ -82,19 +95,24 @@ class _TransactionReceiptScreenState extends State<TransactionReceiptScreen> {
         final userId = data['user_id']?.toString() ?? '0';
         final apiKey = data['api_key']?.toString() ?? widget.apiKey ?? '';
         final sendAmount = vm.getSendAmount(data);
+        final transactionId = data['transaction_id']?.toString() ?? '';
 
         return PopScope(
-          canPop: false,
+          canPop: true,
           onPopInvokedWithResult: (didPop, result) {
             if (didPop) return;
-            Navigator.of(context).pushReplacementNamed('/dashboard', arguments: {'user_id': userId, 'api_key': apiKey});
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else {
+              Navigator.of(context).pushReplacementNamed('/dashboard', arguments: {'user_id': userId, 'api_key': apiKey});
+            }
           },
           child: StreamBuilder<bool>(
             stream: networkService.internetStatus,
             initialData: true,
             builder: (context, snapshot) {
               final isConnected = snapshot.data ?? true;
-              if (!isConnected) return NoInternetScreen(onRetry: () => vm.fetchRecipients());
+              if (!isConnected) return NoInternetScreen(onRetry: () => vm.fetchRecipients(showLoading: true));
 
               int i = 0;
               return Scaffold(
@@ -105,7 +123,13 @@ class _TransactionReceiptScreenState extends State<TransactionReceiptScreen> {
                   centerTitle: false,
                   leading: IconButton(
                     icon: const Icon(Icons.arrow_back_ios_new_rounded, color: _ink, size: 20),
-                    onPressed: () => Navigator.of(context).pushReplacementNamed('/dashboard', arguments: {'user_id': userId, 'api_key': apiKey}),
+                    onPressed: () {
+                      if (Navigator.of(context).canPop()) {
+                        Navigator.of(context).pop();
+                      } else {
+                        Navigator.of(context).pushReplacementNamed('/dashboard', arguments: {'user_id': userId, 'api_key': apiKey});
+                      }
+                    },
                   ),
                   title: const Text('Select Recipient', style: TextStyle(fontFamily: _font, fontSize: 22, fontWeight: FontWeight.w800, color: _ink, letterSpacing: -0.5)),
                 ),
@@ -121,12 +145,12 @@ class _TransactionReceiptScreenState extends State<TransactionReceiptScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _FadeSlide(index: i++, child: _buildAddRecipientTile(userId: userId, apiKey: apiKey, transactionId: data['transaction_id']?.toString() ?? '', sendAmount: sendAmount)),
+                              _FadeSlide(index: i++, child: _buildAddRecipientTile(userId: userId, apiKey: apiKey, transactionId: transactionId, sendAmount: sendAmount)),
                               const SizedBox(height: 24),
                               _FadeSlide(index: i++, child: _buildSearchBar()),
                               _FadeSlide(index: i++, child: const Text('Recent Recipients', style: TextStyle(fontFamily: _font, fontSize: 16, fontWeight: FontWeight.w800, color: _ink))),
                               const SizedBox(height: 12),
-                              _FadeSlide(index: i++, child: _buildRecipientsList(userId: userId, apiKey: apiKey, sendAmount: sendAmount)),
+                              _FadeSlide(index: i++, child: _buildRecipientsList(userId: userId, apiKey: apiKey, sendAmount: sendAmount, transactionId: transactionId)),
                               const SizedBox(height: 32),
                               _FadeSlide(index: i++, child: _buildSecureFooterText()),
                               const SizedBox(height: 30),
@@ -154,6 +178,15 @@ class _TransactionReceiptScreenState extends State<TransactionReceiptScreen> {
         borderRadius: BorderRadius.circular(18),
         boxShadow: [BoxShadow(color: _navy.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 4))],
       ),
+        child: TextSelectionTheme(
+          data: TextSelectionThemeData(
+            // Highlight block color when text is selected
+            selectionColor: AppTheme.PrimaryColor.withValues(alpha: 0.3),
+            // Bubble drag handles color
+            selectionHandleColor: AppTheme.PrimaryColor,
+            // Flashing input cursor line color
+            cursorColor: AppTheme.PrimaryColor,
+          ),
       child: TextField(
         controller: _searchController,
         onChanged: (v) => setState(() => _searchQuery = v),
@@ -167,6 +200,7 @@ class _TransactionReceiptScreenState extends State<TransactionReceiptScreen> {
           contentPadding: const EdgeInsets.symmetric(vertical: 15),
         ),
       ),
+    ),
     );
   }
 
@@ -187,8 +221,19 @@ class _TransactionReceiptScreenState extends State<TransactionReceiptScreen> {
           }
           return;
         }
-        final result = await Navigator.pushNamed(context, '/payment-details', arguments: {'user_id': userId, 'transaction_id': transactionId, 'api_key': apiKey, 'send_amount': sendAmount});
-        if (result == true && mounted) await vm.fetchRecipients();
+        await Navigator.pushNamed(
+          context,
+          '/payment-details',
+          arguments: {
+            'user_id': userId,
+            'transaction_id': transactionId,
+            'api_key': apiKey,
+            'send_amount': sendAmount,
+          },
+        );
+        if (mounted) {
+          await vm.fetchRecipients(showLoading: true);
+        }
       },
       child: Container(
         padding: const EdgeInsets.all(18),
@@ -224,7 +269,7 @@ class _TransactionReceiptScreenState extends State<TransactionReceiptScreen> {
     );
   }
 
-  Widget _buildRecipientsList({required String userId, required String apiKey, required double sendAmount}) {
+  Widget _buildRecipientsList({required String userId, required String apiKey, required double sendAmount, required String transactionId}) {
     final filtered = vm.recipients.where((r) {
       final name = (r['name'] ?? '').toString().toLowerCase();
       final account = (r['account'] ?? r['account_number'] ?? '').toString().toLowerCase();
@@ -244,7 +289,7 @@ class _TransactionReceiptScreenState extends State<TransactionReceiptScreen> {
           child: _Pressable(
             onTap: () {
               if (name.isEmpty || name == 'null') { AppSnackbar.show(context, 'Incomplete recipient info', success: false); return; }
-              _showRecipientActionDialog(recipient: Map<String, dynamic>.from(r), userId: userId, apiKey: apiKey, sendAmount: sendAmount);
+              _showRecipientActionDialog(recipient: Map<String, dynamic>.from(r), userId: userId, apiKey: apiKey, sendAmount: sendAmount, transactionId: transactionId);
             },
             child: Container(
               padding: const EdgeInsets.all(18),
@@ -303,7 +348,7 @@ class _TransactionReceiptScreenState extends State<TransactionReceiptScreen> {
         child: Column(children: [Icon(icon, size: 48, color: Colors.grey.shade300), const SizedBox(height: 16), Text(text, style: const TextStyle(fontFamily: _font, color: Colors.grey, fontWeight: FontWeight.w700))]),
       );
 
-  void _showRecipientActionDialog({required Map<String, dynamic> recipient, required String userId, required String apiKey, required double sendAmount}) {
+  void _showRecipientActionDialog({required Map<String, dynamic> recipient, required String userId, required String apiKey, required double sendAmount, required String transactionId}) {
     final reasonName = vm.getReasonName(recipient);
     final name = _cleanName(recipient['name']?.toString());
     final tcsRate = vm.resolveTcsRateFromReasonName(reasonName.toLowerCase(), recipient: recipient);
@@ -334,8 +379,64 @@ class _TransactionReceiptScreenState extends State<TransactionReceiptScreen> {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Expanded(child: TextButton(onPressed: () { Navigator.pop(ctx); _showDeleteConfirm(recipient); }, child: const Text('Delete', style: TextStyle(fontFamily: _font, color: Colors.redAccent, fontWeight: FontWeight.w800)))),
-                  Expanded(child: TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel', style: TextStyle(fontFamily: _font, color: Colors.grey, fontWeight: FontWeight.w700)))),
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () async {
+                        Navigator.pop(ctx);
+                        await Navigator.pushNamed(
+                          context,
+                          '/payment-details-update',
+                          arguments: {
+                            'user_id': userId,
+                            'transaction_id': transactionId,
+                            'selected_recipient': recipient['id'],
+                            'api_key': apiKey,
+                            'send_amount': sendAmount,
+                          },
+                        );
+                        if (mounted) {
+                          await vm.fetchRecipients(showLoading: true);
+                        }
+                      },
+                      child: const Text(
+                        'Edit',
+                        style: TextStyle(
+                          fontFamily: _font,
+                          color: _navy,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _showDeleteConfirm(recipient);
+                      },
+                      child: const Text(
+                        'Delete',
+                        style: TextStyle(
+                          fontFamily: _font,
+                          color: Colors.redAccent,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(
+                          fontFamily: _font,
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -362,7 +463,12 @@ class _TransactionReceiptScreenState extends State<TransactionReceiptScreen> {
     final tcs = vm.calculateExactTcs(totalAmount: sendAmount, rate: tcsRate, transactionData: widget.transactionData);
     final reasonName = vm.getReasonName(recipient);
     final args = { ...widget.transactionData, ...vm.responseData ?? {}, 'selected_recipient': recipient['id'], 'api_key': apiKey, 'reason': reasonName, 'reason_id': recipient['reason'] ?? recipient['purpose_id'], 'tcs_rate': tcsRate, 'tcs_amount': tcs, 'tcs_percent': (tcsRate * 100).toStringAsFixed(0), 'tcs_label': tcsRate == 0 ? 'No TCS' : 'TCS @ ${(tcsRate * 100).toInt()}%' };
-    if (mounted) Navigator.pushNamed(context, '/payment-summary', arguments: args);
+    if (mounted) {
+      await Navigator.pushNamed(context, '/payment-summary', arguments: args);
+      if (mounted) {
+        await vm.fetchRecipients(showLoading: true);
+      }
+    }
   }
 
   void _showDeleteConfirm(Map<String, dynamic> recipient) {
@@ -374,7 +480,21 @@ class _TransactionReceiptScreenState extends State<TransactionReceiptScreen> {
         content: const Text('Are you sure you want to remove this recipient?', style: TextStyle(fontFamily: _font)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel', style: TextStyle(fontFamily: _font, color: Colors.grey))),
-          TextButton(onPressed: () async { Navigator.pop(ctx); final ok = await vm.deleteRecipient(recipient); if (ok && mounted) AppSnackbar.show(context, 'Deleted successfully', success: true); }, child: const Text('Delete', style: TextStyle(fontFamily: _font, fontWeight: FontWeight.w800, color: Colors.redAccent))),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final ok = await vm.deleteRecipient(recipient);
+              if (mounted) {
+                if (ok) {
+                  AppSnackbar.show(context, 'Deleted successfully', success: true);
+                } else {
+                  AppSnackbar.show(context, 'Failed to delete recipient', success: false);
+                }
+                await vm.fetchRecipients(showLoading: true);
+              }
+            },
+            child: const Text('Delete', style: TextStyle(fontFamily: _font, fontWeight: FontWeight.w800, color: Colors.redAccent)),
+          ),
         ],
       ),
     );

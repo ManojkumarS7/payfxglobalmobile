@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../service/auth_api_service.dart';
+import '../../../services/error_report_service.dart';
 
 class SenderDetailsViewModel extends ChangeNotifier {
   final AuthApiService apiService;
@@ -102,8 +104,16 @@ class SenderDetailsViewModel extends ChangeNotifier {
 
       validateForm();
       notifyListeners();
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint(e.toString());
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Sender Details',
+          operation: 'load_states',
+        ),
+      );
     }
   }
 
@@ -176,12 +186,36 @@ class SenderDetailsViewModel extends ChangeNotifier {
         gender: gender!,
       );
 
+      final success = result['success'] == true || result['status'] == 'success';
+      if (!success) {
+        final message = result['message']?.toString() ?? 'Failed to save sender details';
+        unawaited(
+          ErrorReportService.instance.reportError(
+            error: Exception('Save Sender Details API Error: $message'),
+            stackTrace: StackTrace.current,
+            screen: 'Sender Details',
+            operation: 'save_sender_details',
+            method: 'POST',
+          ),
+        );
+      }
+
       isLoading = false;
       notifyListeners();
 
       return result;
-    } catch (e) {
-      print(e);
+    } catch (e, stackTrace) {
+      debugPrint(e.toString());
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Sender Details',
+          operation: 'save_sender_details',
+          method: 'POST',
+        ),
+      );
+
       isLoading = false;
       notifyListeners();
 

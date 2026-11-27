@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:payfxglobal/paystudy/core/constants/app_colors.dart';
-
+import 'package:payfxglobal/utils/app_theme.dart';
 
 class AppSnackbar {
   static void show(BuildContext context, String msg, {bool success = true}) {
@@ -13,10 +12,10 @@ class AppSnackbar {
             color: Colors.white,
             fontWeight: FontWeight.w600,
           ),
-        ),duration:  Duration(seconds: 1),
-
+        ),
+        duration: const Duration(seconds: 2),
         backgroundColor:
-        success ? AppColors.PrimaryColor : Colors.redAccent,
+            success ? AppTheme.PrimaryColor : Colors.redAccent,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),

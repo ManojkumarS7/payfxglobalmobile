@@ -13,6 +13,7 @@ import 'package:payfxglobal/paystudy/core/constants/app_radio_button.dart';
 import 'package:payfxglobal/paystudy/core/constants/app_snackbar.dart';
 import 'package:payfxglobal/paystudy/core/constants/dashboard.dart';
 import 'package:payfxglobal/utils/user_storage.dart';
+import 'package:payfxglobal/utils/external_activity_service.dart';
 import 'package:payfxglobal/widgets/custom_loading_indicator.dart';
 
 class DocumentsUploadpage extends StatefulWidget {
@@ -180,7 +181,7 @@ class _DocumentsUploadpageState extends State<DocumentsUploadpage> {
   }
 
   Future<void> pickFile(bool isStudent) async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
+    FilePickerResult? result = await ExternalActivityService.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
     );

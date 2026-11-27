@@ -96,30 +96,33 @@ class PayUniLogo extends StatelessWidget {
     return SizedBox(
       width: width,
       height: height,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Red geometric icon
-          SizedBox(
-            width: height * 0.83, // Maintain aspect ratio
-            height: height * 0.75,
-            child: CustomPaint(painter: PayUniIconPainter()),
-          ),
-
-          SizedBox(width: width * 0.08),
-
-          // PAYUNI text
-          Text(
-            'PayFX Global',
-            style: TextStyle(
-              fontSize: height * 0.4,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFF2D3748), // Dark gray from official logo
-              letterSpacing: width * 0.002,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Red geometric icon
+            SizedBox(
+              width: height * 0.83, // Maintain aspect ratio
+              height: height * 0.75,
+              child: CustomPaint(painter: PayUniIconPainter()),
             ),
-          ),
-        ],
+
+            SizedBox(width: width * 0.08),
+
+            // PAYUNI text
+            Text(
+              'PayFX Global',
+              style: TextStyle(
+                fontSize: height * 0.4,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF2D3748), // Dark gray from official logo
+                letterSpacing: width * 0.002,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

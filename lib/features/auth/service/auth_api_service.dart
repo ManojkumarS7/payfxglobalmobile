@@ -3,80 +3,39 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
+import 'package:payfxglobal/services/api_service.dart';
 import 'package:payfxglobal/utils/api_constants2.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 
 class AuthApiService {
-  static const _secureStorage = FlutterSecureStorage();
-  static String? _cachedApiKey;
-
-  /// Store API token securely in SecureStorage and cache it globally
-  static Future<void> setApiKey(String key) async {
-    _cachedApiKey = key;
-    await _secureStorage.write(key: 'api_key', value: key);
-    debugPrint('✅ API Key stored securely and cached globally');
-  }
+  /// Unified with ApiService to ensure a single source of truth for auth tokens
+  static Future<void> setApiKey(String key) => ApiService.setApiKey(key);
 
   /// Retrieve API token from secure storage (with in-memory caching)
-  static Future<String?> getApiKey() async {
-    if (_cachedApiKey != null) return _cachedApiKey;
-    _cachedApiKey = await _secureStorage.read(key: 'api_key');
-    return _cachedApiKey;
-  }
+  static Future<String?> getApiKey() => ApiService.getApiKey();
 
-  /// 🌍 Get API key synchronously from payfxglobal cache (NO async needed)
-  /// Use this across all pages after initialization
-  static String? getApiKeySync() {
-    return _cachedApiKey;
-  }
+  /// Get API key synchronously from cache
+  static String? getApiKeySync() => ApiService.getApiKeySync();
 
-  /// 🌍 Initialize API key from secure storage on app startup
-  static Future<void> initializeApiKey() async {
-    if (_cachedApiKey == null) {
-      _cachedApiKey = await _secureStorage.read(key: 'api_key');
-      debugPrint('✅ API Key initialized globally from secure storage');
-    }
-  }
+  /// Initialize API key from secure storage on app startup
+  static Future<void> initializeApiKey() => ApiService.initializeApiKey();
 
   /// Clear API token from secure storage
-  static Future<void> clearApiKey() async {
-    _cachedApiKey = null;
-    await _secureStorage.delete(key: 'api_key');
-    debugPrint('✅ API Key cleared');
-  }
+  static Future<void> clearApiKey() => ApiService.logout();
 
   /// Get authorization headers with Bearer token
-  static Future<Map<String, String>> authHeaders() async {
-    final apiKey = await getApiKey();
-    final token = apiKey ?? '';
-    return {
-      'Accept': 'application/json',
-      'Auth': 'Bearer $token',
-      'Authorization': 'Bearer $token',
-    };
-  }
+  static Future<Map<String, String>> authHeaders() => ApiService.authHeaders();
 
   /// Check if user is authenticated
-  static Future<bool> isAuthenticated() async {
-    final apiKey = await getApiKey();
-    return apiKey != null && apiKey.isNotEmpty;
-  }
+  static Future<bool> isAuthenticated() => ApiService.isAuthenticated();
 
   /// Complete logout - clear all user data
-  static Future<void> logout() async {
-    _cachedApiKey = null;
-    await _secureStorage.delete(key: 'api_key');
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
-    debugPrint(' User logged out - all data cleared');
-  }
+  static Future<void> logout() => ApiService.logout();
 
   /// Alias for getApiKey() - returns the token
-  static Future<String?> getToken() async {
-    return await getApiKey();
-  }
+  static Future<String?> getToken() => ApiService.getToken();
 
   Future<Map<String, dynamic>> sendOtp({required String email}) async {
     final response = await http.post(
@@ -84,17 +43,18 @@ class AuthApiService {
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'email': email, 'from_source': 2}),
     );
+    print(response.body);
     return jsonDecode(response.body);
   }
 
-  static Future<Map<String, dynamic>> sendOtp2({required String email}) async {
-    final response = await http.post(
-      Uri.parse(ApiConstants.sendOtpUrl2),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': email}),
-    );
-    return jsonDecode(response.body);
-  }
+  // static Future<Map<String, dynamic>> sendOtp2({required String email}) async {
+  //   final response = await http.post(
+  //     Uri.parse(ApiConstants.sendOtpUrl2),
+  //     headers: {'Content-Type': 'application/json'},
+  //     body: jsonEncode({'email': email}),
+  //   );
+  //   return jsonDecode(response.body);
+  // }
 
   Future<Map<String, dynamic>> verifyOtp({required String email, required String otp}) async {
     final response = await http.post(
@@ -206,6 +166,7 @@ class AuthApiService {
         'gender': gender
       }),
     );
+    print(headers);
     return jsonDecode(response.body);
   }
 

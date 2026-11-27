@@ -62,7 +62,8 @@ class ReasonConfig {
     }
     else if (name.contains('family maintenance')) {
       docs = [
-        RequiredDocument(key: 'Passport_doc', label: 'Passport'),
+        RequiredDocument(key: 'Passport_doc', label: 'Passport Front Page'),
+        RequiredDocument(key: 'Passport_doc_back', label: 'Passport Back Page'),
         RequiredDocument(key: 'Visa_doc', label: 'Visa'),
       ];
     } else if (name.contains('tution')) {
@@ -124,8 +125,9 @@ class ReasonConfig {
         RequiredDocument(key: 'bank_statement', label: 'Bank Statement (last 1 year)'),
         RequiredDocument(key: 'registration_form', label: 'Registration Form'),
       ];
-    } else if (name.contains('gift')) {
-      docs = [RequiredDocument(key: 'Passport_doc', label: 'Passport')];
+    }
+    else if (name.contains('gift')) {
+      docs = [];
     }
 
     List<String> rels = [];

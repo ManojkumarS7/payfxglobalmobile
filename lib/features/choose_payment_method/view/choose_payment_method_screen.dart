@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:payfxglobal/paystudy/core/constants/app_snackbar.dart';
+import 'package:payfxglobal/widgets/app_snackbar.dart';
 import 'package:payfxglobal/utils/app_theme.dart';
 import 'package:payfxglobal/widgets/custom_loading_indicator.dart';
 import '../service/choose_payment_method_service.dart';
@@ -19,6 +19,7 @@ class ChoosePaymentMethodScreen extends StatefulWidget {
 
 class _ChoosePaymentMethodScreenState extends State<ChoosePaymentMethodScreen> {
   late ChoosePaymentMethodViewModel vm;
+  Map<String, dynamic> argsMap = {};
 
   // ---- Palette (Matched with Dashboard) ----
   static const Color _navy = AppTheme.PrimaryColor;
@@ -40,7 +41,8 @@ class _ChoosePaymentMethodScreenState extends State<ChoosePaymentMethodScreen> {
     super.didChangeDependencies();
     final args = ModalRoute.of(context)?.settings.arguments;
     if (args is Map<String, dynamic>) {
-      vm.setInitialArgs(args).catchError((e) {
+      argsMap = Map<String, dynamic>.from(args);
+      vm.setInitialArgs(argsMap).catchError((e) {
         if (!mounted) return;
         AppSnackbar.show(context, 'Failed to select recipient', success: false);
       });
@@ -160,6 +162,26 @@ class _ChoosePaymentMethodScreenState extends State<ChoosePaymentMethodScreen> {
     );
   }
 
+  void _navigateToMoneyTransfer() {
+    bool hasMoneyTransfer = false;
+    Navigator.popUntil(context, (route) {
+      if (route.settings.name == '/money-transfer') {
+        hasMoneyTransfer = true;
+        return true;
+      }
+      return route.isFirst;
+    });
+
+    if (!hasMoneyTransfer) {
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/money-transfer',
+        (route) => route.isFirst,
+        arguments: argsMap,
+      );
+    }
+  }
+
   @override
   void dispose() {
     vm.dispose();
@@ -168,22 +190,28 @@ class _ChoosePaymentMethodScreenState extends State<ChoosePaymentMethodScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: vm,
-      builder: (context, _) {
-        int i = 0;
-        return Scaffold(
-          backgroundColor: _bg,
-          appBar: AppBar(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _navigateToMoneyTransfer();
+      },
+      child: AnimatedBuilder(
+        animation: vm,
+        builder: (context, _) {
+          int i = 0;
+          return Scaffold(
             backgroundColor: _bg,
-            elevation: 0,
-            centerTitle: false,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: _ink, size: 20),
-              onPressed: () => Navigator.pop(context),
+            appBar: AppBar(
+              backgroundColor: _bg,
+              elevation: 0,
+              centerTitle: false,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: _ink, size: 20),
+                onPressed: _navigateToMoneyTransfer,
+              ),
+              title: const Text('Payment Mode', style: TextStyle(fontFamily: _font, fontSize: 22, fontWeight: FontWeight.w800, color: _ink, letterSpacing: -0.5)),
             ),
-            title: const Text('Payment Mode', style: TextStyle(fontFamily: _font, fontSize: 22, fontWeight: FontWeight.w800, color: _ink, letterSpacing: -0.5)),
-          ),
           body: Stack(
             children: [
               Padding(
@@ -212,6 +240,13 @@ class _ChoosePaymentMethodScreenState extends State<ChoosePaymentMethodScreen> {
                           label: 'Instant Pay (Online)',
                           sub: 'UPI, Net Banking or Card',
                           value: 'online',
+                          paymentIcons: const [
+                            'assets/icons/google-pay-icon.png',
+                            'assets/icons/phonepe-icon.png',
+                            'assets/icons/bhim-upi-icon.png',
+                            'assets/icons/rupay-logo-icon.png',
+                            'assets/icons/visa-icon.png',
+                          ],
                         ),
                       ),
                     const Spacer(),
@@ -276,14 +311,22 @@ class _ChoosePaymentMethodScreenState extends State<ChoosePaymentMethodScreen> {
           ),
         );
       },
-    );
-  }
+    ),
+  );
+}
 
-  Widget _buildOption({required IconData icon, required String label, required String sub, required String value}) {
+  Widget _buildOption({
+    required IconData icon,
+    required String label,
+    required String sub,
+    required String value,
+    List<String>? paymentIcons,
+  }) {
     final bool isSelected = vm.selectedMethod == value;
     return _Pressable(
       onTap: () => vm.setPaymentMethod(value),
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -291,35 +334,87 @@ class _ChoosePaymentMethodScreenState extends State<ChoosePaymentMethodScreen> {
           border: Border.all(color: isSelected ? _accent : Colors.transparent, width: 2),
           boxShadow: [BoxShadow(color: _navy.withOpacity(0.06), blurRadius: 16, offset: const Offset(0, 8))],
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(color: isSelected ? _accent.withOpacity(0.15) : _bg, borderRadius: BorderRadius.circular(16)),
-              child: Icon(icon, color: _navy, size: 26),
+            Row(
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(color: isSelected ? _accent.withOpacity(0.15) : _bg, borderRadius: BorderRadius.circular(16)),
+                  child: Icon(icon, color: _navy, size: 26),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(label, style: const TextStyle(fontFamily: _font, fontSize: 16, fontWeight: FontWeight.w800, color: _ink)),
+                      const SizedBox(height: 2),
+                      Text(sub, style: TextStyle(fontFamily: _font, fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                ),
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: isSelected ? _navy : Colors.grey.shade300, width: 2),
+                  ),
+                  child: isSelected ? Center(child: Container(width: 12, height: 12, decoration: const BoxDecoration(color: _navy, shape: BoxShape.circle))) : null,
+                ),
+              ],
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(label, style: const TextStyle(fontFamily: _font, fontSize: 16, fontWeight: FontWeight.w800, color: _ink)),
-                  const SizedBox(height: 2),
-                  Text(sub, style: TextStyle(fontFamily: _font, fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
-                ],
+            if (paymentIcons != null && paymentIcons.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected ? const Color(0xFFF0F4FC) : const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isSelected ? _navy.withOpacity(0.08) : Colors.grey.shade100,
+                  ),
+                ),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: paymentIcons.map((asset) => _buildPaymentIconBadge(asset)).toList(),
+                ),
               ),
-            ),
-            Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: isSelected ? _navy : Colors.grey.shade300, width: 2),
-              ),
-              child: isSelected ? Center(child: Container(width: 12, height: 12, decoration: const BoxDecoration(color: _navy, shape: BoxShape.circle))) : null,
-            ),
+            ],
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPaymentIconBadge(String assetPath) {
+    return Container(
+      width: 42,
+      height: 28,
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(7),
+        border: Border.all(color: Colors.grey.shade200, width: 0.8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 3,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Center(
+        child: Image.asset(
+          assetPath,
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
         ),
       ),
     );

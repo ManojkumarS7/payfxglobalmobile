@@ -1,10 +1,11 @@
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:payfxglobal/paystudy/core/constants/app_snackbar.dart';
+import 'package:payfxglobal/widgets/app_snackbar.dart';
 import 'package:payfxglobal/services/api_service.dart';
 import 'package:payfxglobal/services/transaction_api.dart';
 import 'package:payfxglobal/utils/app_theme.dart';
+import 'package:payfxglobal/utils/external_activity_service.dart';
 import 'package:payfxglobal/widgets/custom_loading_indicator.dart';
 import 'package:payfxglobal/widgets/custom_text_field.dart';
 
@@ -389,6 +390,13 @@ class _UpdateDeliveryMethodScreenState extends State<UpdateDeliveryMethodScreen>
     return true;
   }
 
+  String _formatFileSize(int bytes) {
+    if (bytes <= 0) return "0 B";
+    if (bytes < 1024) return "$bytes B";
+    if (bytes < 1024 * 1024) return "${(bytes / 1024).toStringAsFixed(2)} KB";
+    return "${(bytes / (1024 * 1024)).toStringAsFixed(2)} MB";
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isDataFetching) return const Scaffold(backgroundColor: _bg, body: Center(child: CustomLoadingIndicator()));
@@ -463,22 +471,36 @@ class _UpdateDeliveryMethodScreenState extends State<UpdateDeliveryMethodScreen>
                               const SizedBox(height: 20),
                               if (_educationLoan == 'yes')
                                 _buildFileUploadTile(
-                                  label: 'Sanction Letter *',
+                                  label: 'Sanction Letter (Max 10MB)*',
                                   file: _pickedFiles['sanction_letter'],
                                   hasExisting: _existingDocuments['sanction_letter'] ?? false,
                                   onTap: () async {
-                                    final res = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['pdf', 'jpg', 'png']);
-                                    if (res != null) setState(() => _pickedFiles['sanction_letter'] = res.files.first);
+                                    final res = await ExternalActivityService.pickFiles(type: FileType.custom, allowedExtensions: ['pdf', 'jpg', 'png']);
+                                    if (res != null) {
+                                      final picked = res.files.first;
+                                      if (picked.size > 10 * 1024 * 1024) {
+                                        if (mounted) AppSnackbar.show(context, 'File size should not exceed 10 MB', success: false);
+                                        return;
+                                      }
+                                      setState(() => _pickedFiles['sanction_letter'] = picked);
+                                    }
                                   },
                                 ),
                             ],
                             ...cfg.requiredDocuments.map((doc) => _buildFileUploadTile(
-                              label: '${doc.label}${doc.required ? ' *' : ''}',
+                              label: '${doc.label}${doc.required ? ' *' : ''} (Max 10MB)',
                               file: _pickedFiles[doc.key],
                               hasExisting: _existingDocuments[doc.key] ?? false,
                               onTap: () async {
-                                final res = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['pdf', 'jpg', 'png']);
-                                if (res != null) setState(() => _pickedFiles[doc.key] = res.files.first);
+                                final res = await ExternalActivityService.pickFiles(type: FileType.custom, allowedExtensions: ['pdf', 'jpg', 'png']);
+                                if (res != null) {
+                                  final picked = res.files.first;
+                                  if (picked.size > 10 * 1024 * 1024) {
+                                    if (mounted) AppSnackbar.show(context, 'File size should not exceed 10 MB', success: false);
+                                    return;
+                                  }
+                                  setState(() => _pickedFiles[doc.key] = picked);
+                                }
                               },
                             )),
                           ],
@@ -609,7 +631,7 @@ class _UpdateDeliveryMethodScreenState extends State<UpdateDeliveryMethodScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(label, style: const TextStyle(fontFamily: _font, fontSize: 12, fontWeight: FontWeight.w700, color: _ink)),
-                    if (hasFile || hasExisting) Text(hasFile ? file.name : 'Document already uploaded', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: _font, fontSize: 11, color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
+                    if (hasFile || hasExisting) Text(hasFile ? "${file.name} (${_formatFileSize(file.size)})" : 'Document already uploaded', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: _font, fontSize: 11, color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
                   ],
                 ),
               ),

@@ -1,4 +1,7 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:payfxglobal/widgets/custom_text_field.dart';
 import 'package:payfxglobal/widgets/custom_loading_indicator.dart';
@@ -6,18 +9,19 @@ import 'package:payfxglobal/widgets/app_snackbar.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:payfxglobal/features/auth/viewmodel/sender_view_model.dart';
 import 'package:payfxglobal/features/auth/service/auth_api_service.dart';
+import 'package:payfxglobal/widgets/registration_progress_widget.dart';
 
 import '../../../utils/app_theme.dart';
 
-class SenderDetailsScreen extends StatefulWidget {
+class SenderDetailsScreen extends ConsumerStatefulWidget {
   final String? previousPage;
   const SenderDetailsScreen({super.key, this.previousPage});
 
   @override
-  State<SenderDetailsScreen> createState() => _SenderDetailsScreenState();
+  ConsumerState<SenderDetailsScreen> createState() => _SenderDetailsScreenState();
 }
 
-class _SenderDetailsScreenState extends State<SenderDetailsScreen> {
+class _SenderDetailsScreenState extends ConsumerState<SenderDetailsScreen> {
   late SenderDetailsViewModel vm;
 
   // ---- Palette (Matched with Dashboard) ----
@@ -69,47 +73,61 @@ class _SenderDetailsScreenState extends State<SenderDetailsScreen> {
       animation: vm,
       builder: (context, child) {
         int i = 0;
-        return Scaffold(
-          backgroundColor: _bg,
-          appBar: AppBar(
+        return PopScope(
+          canPop: false,
+          onPopInvoked: (didPop) async {
+            if (didPop) return;
+            final exit = await SaveProgressBanner.showExitConfirmation(context);
+            if (exit && mounted) Navigator.pushReplacementNamed(context, '/login');
+          },
+          child: Scaffold(
             backgroundColor: _bg,
-            elevation: 0,
-            centerTitle: false,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: _ink, size: 20),
-              onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
+            appBar: AppBar(
+              backgroundColor: _bg,
+              elevation: 0,
+              centerTitle: false,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: _ink, size: 20),
+                onPressed: () async {
+                  final exit = await SaveProgressBanner.showExitConfirmation(context);
+                  if (exit && mounted) Navigator.pushReplacementNamed(context, '/login');
+                },
+              ),
+              title: const Text(
+                'Profile Details',
+                style: TextStyle(fontFamily: _font, fontSize: 22, fontWeight: FontWeight.w800, color: _ink, letterSpacing: -0.5),
+              ),
             ),
-            title: const Text(
-              'Profile Details',
-              style: TextStyle(fontFamily: _font, fontSize: 22, fontWeight: FontWeight.w800, color: _ink, letterSpacing: -0.5),
-            ),
-          ),
-          body: Stack(
-            children: [
-              SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                child: Form(
-                  key: vm.formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _FadeSlide(index: i++, child: const Text('Personal Information', style: TextStyle(fontFamily: _font, fontSize: 18, fontWeight: FontWeight.w800, color: _ink))),
-                      const SizedBox(height: 12),
-                      _FadeSlide(
-                        index: i++,
-                        child: _buildWhiteCard(
-                          child: Column(
-                            children: [
-                              AppTextField(controller: vm.firstNameController, labelText: 'First Name', isRequired: true),
-                              const SizedBox(height: 16),
-                              AppTextField(controller: vm.lastNameController, labelText: 'Last Name', isRequired: true),
-                              const SizedBox(height: 16),
-                              AppTextField(controller: vm.dobController, labelText: 'Date of Birth', isRequired: true, enabled: false, hintText: 'DD-MM-YYYY'),
-                            ],
+            body: Stack(
+              children: [
+                SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  child: Form(
+                    key: vm.formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const RegistrationProgressHeader(currentStep: 4),
+                        const SizedBox(height: 12),
+                        const SocialProofBadge(),
+                        const SizedBox(height: 16),
+                        _FadeSlide(index: i++, child: const Text('Personal Information', style: TextStyle(fontFamily: _font, fontSize: 18, fontWeight: FontWeight.w800, color: _ink))),
+                        const SizedBox(height: 12),
+                        _FadeSlide(
+                          index: i++,
+                          child: _buildWhiteCard(
+                            child: Column(
+                              children: [
+                                AppTextField(controller: vm.firstNameController, labelText: 'First Name', isRequired: true),
+                                const SizedBox(height: 16),
+                                AppTextField(controller: vm.lastNameController, labelText: 'Last Name', isRequired: true),
+                                const SizedBox(height: 16),
+                                AppTextField(controller: vm.dobController, labelText: 'Date of Birth', isRequired: true, enabled: false, hintText: 'DD-MM-YYYY'),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
                       const SizedBox(height: 24),
                       _FadeSlide(index: i++, child: const Text('Address Details', style: TextStyle(fontFamily: _font, fontSize: 18, fontWeight: FontWeight.w800, color: _ink))),
                       const SizedBox(height: 12),
@@ -179,9 +197,10 @@ class _SenderDetailsScreenState extends State<SenderDetailsScreen> {
               if (vm.isLoading) const LoadingOverlay(),
             ],
           ),
-        );
-      },
-    );
+        ),
+      );
+    },
+  );
   }
 
   Widget _buildWhiteCard({required Widget child}) => Container(
@@ -258,6 +277,7 @@ class _SenderDetailsScreenState extends State<SenderDetailsScreen> {
         showSearchBox: true,
         menuProps: const MenuProps(backgroundColor: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
         searchFieldProps: TextFieldProps(
+          cursorColor: AppTheme.PrimaryColor,
           decoration: InputDecoration(
             hintText: 'Search state...',
             prefixIcon: const Icon(Icons.search_rounded, color:  AppTheme.PrimaryColor),
@@ -277,6 +297,7 @@ class _SenderDetailsScreenState extends State<SenderDetailsScreen> {
           labelStyle: TextStyle(fontFamily: _font, fontSize: 14, fontWeight: FontWeight.w800, color: Colors.grey.shade500),
           filled: true,
           fillColor: _bg,
+
           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
           focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: _accent, width: 2)),
@@ -291,6 +312,7 @@ class _SenderDetailsScreenState extends State<SenderDetailsScreen> {
 
   Widget _buildPhoneField() {
     return IntlPhoneField(
+      cursorColor: AppTheme.PrimaryColor,
       controller: vm.mobileController,
       initialCountryCode: 'IN',
       onChanged: (phone) => vm.updatePhoneNumber(phone.completeNumber),
@@ -315,6 +337,8 @@ class _SenderDetailsScreenState extends State<SenderDetailsScreen> {
 
     final result = await vm.submitSenderDetails(userId: int.parse(userId.toString()));
     if (result['success'] == true) {
+      if (!mounted) return;
+      await StepCompletionOverlay.show(context, 4);
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/upload-documents', arguments: {'user_id': userId});
     } else {

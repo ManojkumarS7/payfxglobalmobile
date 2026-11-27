@@ -50,7 +50,10 @@ class MoneyTransferService {
   Future<Map<String, dynamic>> fetchSettings() async {
     final response = await http.get(
       Uri.parse('${ApiConstants.baseUrl}/app/customer/getsettings'),
+
     );
+
+    print(Uri.parse('${ApiConstants.baseUrl}/app/customer/getsettings'));
 
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
@@ -68,10 +71,13 @@ class MoneyTransferService {
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      return double.tryParse(data['rate'].toString()) ?? 0.012;
+      final rate = double.tryParse(data['rate']?.toString() ?? '');
+      if (rate != null && rate > 0) {
+        return rate;
+      }
     }
 
-    return 0.012;
+    throw Exception('Failed to load exchange rate for $currencyCode (HTTP ${response.statusCode})');
   }
 
   Future<Map<String, dynamic>> fetchIbrRate() async {
@@ -102,10 +108,12 @@ class MoneyTransferService {
     required double gstAmount,
     required double tcsAmount,
     required double senderAmount,
+    double nostroCharge = 0.0,
   }) async {
-    final apiKey = await ApiService.getApiKey();
+    final headers = await ApiService.authHeaders();
+    final apiKey = headers['Auth']?.replaceFirst('Bearer ', '');
 
-    if (apiKey == null) {
+    if (apiKey == null || apiKey.isEmpty) {
       throw Exception('Session expired');
     }
 
@@ -123,8 +131,10 @@ class MoneyTransferService {
       'action': 'get_started',
       'gst_amount': gstAmount.toStringAsFixed(2),
       'tcs_amount': tcsAmount.toStringAsFixed(2),
+      'nostro_charge': nostroCharge.toStringAsFixed(2),
+      'nostro_charges': nostroCharge.toStringAsFixed(2),
       'inr_amount_cal': (
-          senderAmount + serviceCharge + gstAmount + tcsAmount
+          senderAmount + serviceCharge + gstAmount + tcsAmount + nostroCharge
       ).toStringAsFixed(2),
       'tcs_rate': 0.02,
     };
@@ -132,8 +142,8 @@ class MoneyTransferService {
     final response = await http.post(
       Uri.parse('${ApiConstants.baseUrl}/app/customer/store-transaction-data'),
       headers: {
+        ...headers,
         'Content-Type': 'application/json',
-        'Auth': 'Bearer $apiKey',
       },
       body: jsonEncode(payload),
     );

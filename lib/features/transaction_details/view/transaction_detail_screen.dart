@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:payfxglobal/paystudy/core/constants/app_snackbar.dart';
+import 'package:payfxglobal/widgets/app_snackbar.dart';
 import 'package:payfxglobal/utils/app_theme.dart';
 import 'package:payfxglobal/widgets/custom_loading_indicator.dart';
 import '../service/transaction_detail_service.dart';
@@ -44,6 +44,21 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
       await vm.submitUtr();
       if (!mounted) return;
       AppSnackbar.show(context, 'UTR Submitted Successfully', success: true);
+    } catch (e) {
+      if (!mounted) return;
+      AppSnackbar.show(context, e.toString().replaceAll('Exception: ', ''), success: false);
+    }
+  }
+
+  Future<void> _payNow() async {
+    try {
+      await vm.startOnlinePayment(
+        onPaymentPending: () => AppSnackbar.show(context, 'Payment is pending'),
+        onPaymentCancelled: () => AppSnackbar.show(context, 'Payment cancelled', success: false),
+        onPaymentFailed: (msg) => AppSnackbar.show(context, msg, success: false),
+        onPaymentSuccess: (orderId) => AppSnackbar.show(context, 'Payment Successful', success: true),
+        onVerificationFailed: (msg) => AppSnackbar.show(context, msg, success: false),
+      );
     } catch (e) {
       if (!mounted) return;
       AppSnackbar.show(context, e.toString().replaceAll('Exception: ', ''), success: false);
@@ -131,15 +146,21 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                     _infoTile('Account Number', vm.receiver['account_number'] ?? '-'),
                     if ((vm.receiver['swift_code']?.toString() ?? '').isNotEmpty)
                       _infoTile('SWIFT Code', vm.receiver['swift_code'].toString()),
+                    if ((vm.receiver['iban']?.toString() ?? '').isNotEmpty)
+                      _infoTile('IBAN', vm.receiver['iban'].toString()),
                     if ((vm.receiver['country']?.toString() ?? '').isNotEmpty)
                       _infoTile('Country', vm.receiver['country'].toString()),
                   ],
                 )),
                 const SizedBox(height: 24),
+                
                 if (vm.existingUtr != null)
                   _FadeSlide(index: i++, child: _buildSubmittedUtrCard())
                 else if (vm.showUtrInput)
                   _FadeSlide(index: i++, child: _buildUtrSection()),
+
+                if (vm.showOnlinePaymentButton)
+                  _FadeSlide(index: i++, child: _buildOnlinePaymentSection()),
                 
                 if (vm.isOffline && vm.existingUtr == null) ...[
                    const SizedBox(height: 24),
@@ -193,7 +214,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
               shape: BoxShape.circle,
             ),
             child: Icon(
-              vm.isSuccess ? Icons.check_circle_rounded : vm.isSettled ? Icons.verified_rounded : Icons.schedule_rounded,
+              vm.isSuccess ? Icons.check_circle_rounded : vm.isFailed ? Icons.cancel_rounded : Icons.schedule_rounded,
               color: vm.statusColor,
               size: 36,
             ),
@@ -382,7 +403,15 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
             const SizedBox(height: 20),
           ],
 
-          TextField(
+    TextSelectionTheme(
+    data: TextSelectionThemeData(
+    selectionColor: AppTheme.PrimaryColor.withValues(alpha: 0.3),
+    // Bubble drag handles color
+    selectionHandleColor: AppTheme.PrimaryColor,
+    // Flashing input cursor line color
+    cursorColor: AppTheme.PrimaryColor,
+    ),
+    child:TextField(
             controller: vm.utrController,
             textCapitalization: TextCapitalization.characters,
             style: const TextStyle(fontFamily: _font, fontWeight: FontWeight.w700, color: _ink),
@@ -397,6 +426,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
               focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: _accent, width: 2)),
             ),
           ),
+    ),
           const SizedBox(height: 16),
           _Pressable(
             onTap: vm.utrSubmitting ? null : _submitUtr,
@@ -411,6 +441,47 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
               child: vm.utrSubmitting 
                 ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
                 : const Text('Submit UTR', style: TextStyle(fontFamily: _font, fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOnlinePaymentSection() {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0F9FF),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFBAE6FD)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Complete Payment', style: TextStyle(fontFamily: _font, fontWeight: FontWeight.w800, fontSize: 17, color: _ink)),
+          const SizedBox(height: 8),
+          Text('Your payment is pending. Please complete the transaction to proceed.', style: TextStyle(fontFamily: _font, fontSize: 13, color: Colors.grey.shade700, height: 1.4)),
+          const SizedBox(height: 20),
+          
+          if (vm.transactionCreatedAt != null) ...[
+            if (vm.isExpired) _buildExpiredBadge() else _buildCountdownBadge(),
+            const SizedBox(height: 20),
+          ],
+
+          _Pressable(
+            onTap: vm.isProcessingPayment ? null : _payNow,
+            child: Container(
+              width: double.infinity,
+              height: 54,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: _navy,
+                borderRadius: BorderRadius.circular(30),
+              ),
+              child: vm.isProcessingPayment 
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
+                : const Text('Pay Now', style: TextStyle(fontFamily: _font, fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white)),
             ),
           ),
         ],

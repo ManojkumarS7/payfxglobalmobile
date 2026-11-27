@@ -10,6 +10,7 @@ import '../transaction_item/transaction_item.dart';
 
 
 class TransactionHistoryApiService {
+
   Future<List<TransactionItem>> fetchTransactions({
     required int userId,
   }) async {
@@ -25,6 +26,8 @@ class TransactionHistoryApiService {
       'https://www.payfxglobal.com/app/customer/transactions?user_id=$userId',
     );
 
+    print(uri);
+
     final response = await http.get(
       uri,
       headers: headers,
@@ -38,6 +41,9 @@ class TransactionHistoryApiService {
 
     if (decoded is Map && decoded['success'] == true) {
       final List<dynamic> data = decoded['data'] ?? [];
+
+
+      print(data);
 
       return data
           .map(

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lottie/lottie.dart';
 import 'package:payfxglobal/features/dashboard/view/currency_rate_view.dart';
 import 'package:payfxglobal/paystudy/features/account_opening/account_opening.dart';
 import 'package:payfxglobal/features/intro_screen/intro_screen.dart';
-import 'package:payfxglobal/features//profile/profile_screen.dart';
+import 'package:payfxglobal/features/profile/profile_screen.dart';
 import 'package:payfxglobal/services/notification_service.dart';
 import 'features/auth/view/forgot_password_otp_screen.dart';
 import 'features/auth/view/forgot_password_reset_screen.dart';
@@ -22,7 +23,7 @@ import 'package:payfxglobal/features/welcome/welcome_screen.dart';
 import 'package:payfxglobal/features/auth/view/email_entry_screen.dart';
 import 'features/dashboard/view/dashboard_view.dart';
 import 'features/auth/view/password_entry_screen.dart';
-import 'package:payfxglobal/features/auth/view/upload _document_screen.dart';
+import 'features/auth/view/upload_document_screen.dart';
 import 'features/update_recepient/view/update_delivery_method_screen.dart';
 import 'features/payment_success/view/payment_success_screen.dart';
 import 'features/money_transfer/view/money_transfer_screen.dart';
@@ -47,6 +48,7 @@ import 'package:upgrader/upgrader.dart';
 
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
 
 
 Future<void> main() async {
@@ -62,6 +64,10 @@ Future<void> main() async {
   SessionManager().initialize();
   await NotificationService.initialize();
 
+  // Preload Lottie animation in background for instant playback on welcome screen
+  try {
+    AssetLottie('assets/animations/global_remittance.json').load();
+  } catch (_) {}
 
   runApp(
     const ProviderScope(
@@ -79,6 +85,7 @@ class PayFXGlobal extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       navigatorKey: navigatorKey,
+      navigatorObservers: [routeObserver],
       title: AppConstants.appName,
       theme: AppTheme.lightTheme.copyWith(
         scaffoldBackgroundColor: Colors.white,
@@ -142,7 +149,8 @@ class PayFXGlobal extends StatelessWidget {
         },
 
         '/profile': (context) {
-          final user = ModalRoute.of(context)!.settings.arguments as User;
+          final args = ModalRoute.of(context)?.settings.arguments;
+          final user = args is User ? args : User.empty();
           return ProfileScreen(user: user);
         },
 

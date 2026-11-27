@@ -1,28 +1,32 @@
 import 'dart:io';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:payfxglobal/features/auth/service/auth_api_service.dart';
-import 'package:payfxglobal/features/auth/viewmodel/auth_viewmodel.dart';
-import 'package:payfxglobal/utils/app_theme.dart';
-import 'package:payfxglobal/widgets/custom_text_field.dart';
-import 'package:payfxglobal/widgets/custom_loading_indicator.dart';
-import 'package:payfxglobal/widgets/app_snackbar.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:payfxglobal/widgets/registration_progress_widget.dart';
+import '../../../widgets/app_snackbar.dart';
+import '../../../widgets/custom_loading_indicator.dart';
+import '../service/auth_api_service.dart';
+import '../viewmodel/auth_viewmodel.dart';
 import 'login_screen.dart';
+import '../../../utils/app_theme.dart';
+import '../../../widgets/custom_text_field.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-class EmailEntryScreen extends StatefulWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:payfxglobal/features/auth/presentation/providers/auth_provider.dart';
+
+class EmailEntryScreen extends ConsumerStatefulWidget {
   final String? previousPage;
   const EmailEntryScreen({super.key, this.previousPage});
 
   @override
-  State<EmailEntryScreen> createState() => _EmailEntryScreenState();
+  ConsumerState<EmailEntryScreen> createState() => _EmailEntryScreenState();
 }
 
-class _EmailEntryScreenState extends State<EmailEntryScreen> {
+class _EmailEntryScreenState extends ConsumerState<EmailEntryScreen> {
   late final AuthViewModel vm;
 
   // ---- Palette (Matched with Dashboard) ----
-  // static const Color _navy = Color(0xFF16305C);
   static const Color _ink = Color(0xFF0B1B3A);
   static const Color _accent = Color(0xFFFFC72C);
   static const Color _bg = Color(0xFFF5F7FB);
@@ -34,7 +38,7 @@ class _EmailEntryScreenState extends State<EmailEntryScreen> {
   @override
   void initState() {
     super.initState();
-    vm = AuthViewModel(apiService: AuthApiService());
+    vm = AuthViewModel(apiService: ref.read(authApiServiceProvider));
   }
 
   @override
@@ -88,7 +92,10 @@ class _EmailEntryScreenState extends State<EmailEntryScreen> {
       if (vm.enteredOtp.length != 6) return;
       final success = await vm.verifyOtp();
       if (success && mounted) {
-        Navigator.pushNamed(context, '/password-entry', arguments: {'email': vm.emailController.text.trim()});
+        await StepCompletionOverlay.show(context, 1);
+        if (mounted) {
+          Navigator.pushNamed(context, '/password-entry', arguments: {'email': vm.emailController.text.trim()});
+        }
       }
     } else {
       final message = await vm.sendOtpWithValidation(context);
@@ -121,32 +128,69 @@ class _EmailEntryScreenState extends State<EmailEntryScreen> {
     return AnimatedBuilder(
       animation: vm,
       builder: (context, _) {
-        return Scaffold(
-          backgroundColor: _bg,
-          appBar: AppBar(
+        return PopScope(
+          canPop: false,
+          onPopInvoked: (didPop) async {
+            if (didPop) return;
+            final exit = await SaveProgressBanner.showExitConfirmation(context);
+            if (exit && mounted) Navigator.pop(context);
+          },
+          child: Scaffold(
             backgroundColor: _bg,
-            elevation: 0,
-            leading: IconButton(icon: const Icon(Icons.arrow_back_ios_new_rounded, color: _ink, size: 20), onPressed: () => Navigator.pop(context)),
-          ),
-          body: Stack(
-            children: [
-              SafeArea(
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _FadeSlide(index: i++, child: _buildHeader()),
-                      const SizedBox(height: 32),
-                      if (vm.otpSent) _FadeSlide(index: i++, child: _buildOtpStep()) 
-                      else _FadeSlide(index: i++, child: _buildEmailStep()),
-                    ],
+            appBar: AppBar(
+              backgroundColor: _bg,
+              elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: _ink, size: 20),
+                onPressed: () async {
+                  final exit = await SaveProgressBanner.showExitConfirmation(context);
+                  if (exit && mounted) Navigator.pop(context);
+                },
+              ),
+            ),
+            body: Stack(
+              children: [
+                SafeArea(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const RegistrationProgressHeader(currentStep: 1),
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF0FDF4),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFBBF7D0)),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.bolt_rounded, size: 18, color: Color(0xFF166534)),
+                              SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Complete setup once → Transfer money to 100+ countries in under 2 minutes, every time.',
+                                  style: TextStyle(fontFamily: _font, fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF166534)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        _FadeSlide(index: i++, child: _buildHeader()),
+                        const SizedBox(height: 32),
+                        if (vm.otpSent) _FadeSlide(index: i++, child: _buildOtpStep()) 
+                        else _FadeSlide(index: i++, child: _buildEmailStep()),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              if (vm.isLoading) const LoadingOverlay(),
-            ],
+                if (vm.isLoading) const LoadingOverlay(),
+              ],
+            ),
           ),
         );
       },
@@ -294,26 +338,32 @@ class _EmailEntryScreenState extends State<EmailEntryScreen> {
         return SizedBox(
           width: 44,
           height: 56,
-          child: TextField(
-            controller: vm.otpControllers[index],
-            focusNode: vm.focusNodes[index],
-            textAlign: TextAlign.center,
-            keyboardType: TextInputType.number,
-            maxLength: 1,
-            style: const TextStyle(fontFamily: _font, fontSize: 20, fontWeight: FontWeight.w800, color: _ink),
-            decoration: InputDecoration(
-              counterText: '',
-              filled: true,
-              fillColor: _bg,
-              contentPadding: EdgeInsets.zero,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: _accent, width: 2)),
+          child: TextSelectionTheme(
+            data: TextSelectionThemeData(
+              cursorColor: AppTheme.PrimaryColor,
+              selectionColor: AppTheme.PrimaryColor,
             ),
-            onChanged: (value) {
-              if (value.isNotEmpty && index < 5) vm.focusNodes[index + 1].requestFocus();
-              else if (value.isEmpty && index > 0) vm.focusNodes[index - 1].requestFocus();
-              setState(() {});
-            },
+            child: TextField(
+              controller: vm.otpControllers[index],
+              focusNode: vm.focusNodes[index],
+              textAlign: TextAlign.center,
+              keyboardType: TextInputType.number,
+              maxLength: 1,
+              style: const TextStyle(fontFamily: _font, fontSize: 20, fontWeight: FontWeight.w800, color: _ink),
+              decoration: InputDecoration(
+                counterText: '',
+                filled: true,
+                fillColor: _bg,
+                contentPadding: EdgeInsets.zero,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: _accent, width: 2)),
+              ),
+              onChanged: (value) {
+                if (value.isNotEmpty && index < 5) vm.focusNodes[index + 1].requestFocus();
+                else if (value.isEmpty && index > 0) vm.focusNodes[index - 1].requestFocus();
+                setState(() {});
+              },
+            ),
           ),
         );
       }),

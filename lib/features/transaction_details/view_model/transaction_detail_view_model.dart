@@ -1,6 +1,15 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_cashfree_pg_sdk/api/cferrorresponse/cferrorresponse.dart';
+import 'package:flutter_cashfree_pg_sdk/api/cfpayment/cfwebcheckoutpayment.dart';
+import 'package:flutter_cashfree_pg_sdk/api/cfpaymentgateway/cfpaymentgatewayservice.dart';
+import 'package:flutter_cashfree_pg_sdk/api/cfsession/cfsession.dart';
+import 'package:flutter_cashfree_pg_sdk/utils/cfenums.dart';
+import 'package:flutter_cashfree_pg_sdk/utils/cfexceptions.dart';
+import 'package:payfxglobal/services/api_service.dart';
+import 'package:payfxglobal/utils/user_storage.dart';
 import '../service/transaction_detail_service.dart';
+import '../../../services/error_report_service.dart';
 
 class TransactionDetailViewModel extends ChangeNotifier {
   final TransactionDetailApiService apiService;
@@ -10,6 +19,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
   });
 
   final TextEditingController utrController = TextEditingController();
+  final CFPaymentGatewayService cfPaymentGatewayService = CFPaymentGatewayService();
 
   Map<String, dynamic> txData = {};
   Map<String, dynamic> sender = {};
@@ -36,6 +46,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
   bool isLoadingDetails = true;
   bool utrSubmitting = false;
   bool isDownloading = false;
+  bool isProcessingPayment = false;
   String? detailsError;
 
   DateTime? transactionCreatedAt;
@@ -49,6 +60,10 @@ class TransactionDetailViewModel extends ChangeNotifier {
     return paymentType.trim().toLowerCase() == 'offline';
   }
 
+  bool get isOnline {
+    return paymentType.trim().toLowerCase() == 'online';
+  }
+
   String get status {
     return txData['status']?.toString().toLowerCase() ?? '';
   }
@@ -57,30 +72,40 @@ class TransactionDetailViewModel extends ChangeNotifier {
     return status == 'success';
   }
 
-  bool get isSettled {
+  bool get isPending {
+    return status == 'pending' || status.contains('pending');
+  }
+
+  bool get isFailed {
     return status == 'settled' || status == 'failed';
   }
 
   String get statusLabel {
     if (isSuccess) return 'Success';
-    if (isSettled) return 'Settled';
+    if (isFailed) return 'Failed';
+    if (isPending) return 'Pending';
     return 'Processing';
   }
 
   Color get statusColor {
     if (isSuccess) return Colors.green;
-    if (isSettled) return const Color(0xFF3B82F6);
+    if (isFailed) return Colors.redAccent;
+    if (isPending) return const Color(0xFFFFC72C);
     return const Color(0xFFEBCA53);
   }
 
   bool get showUtrInput {
-    return existingUtr == null && isOffline && !isSettled;
+    return existingUtr == null && isOffline && isPending;
+  }
+
+  bool get showOnlinePaymentButton {
+    return isOnline && isPending && !isExpired;
   }
 
   bool get showDownloadButton {
     return (isOffline && existingUtr != null) ||
         (!isOffline && isSuccess) ||
-        isSettled;
+        isFailed;
   }
 
   double toDouble(dynamic value) {
@@ -120,6 +145,10 @@ class TransactionDetailViewModel extends ChangeNotifier {
     transactionCreatedAt = parseDate(
       txData['created_at']?.toString(),
     );
+
+    if (transactionCreatedAt != null) {
+      startCountdownTimer();
+    }
   }
 
   Future<void> fetchPaymentDetails() async {
@@ -140,8 +169,18 @@ class TransactionDetailViewModel extends ChangeNotifier {
         transactionId: transactionId,
       );
 
-      if (response['success'] != true) {
+      final success = response['success'] == true || response['status'] == 'success';
+      if (!success) {
         detailsError = response['message'] ?? 'Failed to load details';
+        unawaited(
+          ErrorReportService.instance.reportError(
+            error: Exception('Fetch Transaction Details API Error: $detailsError'),
+            stackTrace: StackTrace.current,
+            screen: 'Transaction Details',
+            operation: 'fetch_payment_details',
+            method: 'POST',
+          ),
+        );
         isLoadingDetails = false;
         notifyListeners();
         return;
@@ -150,8 +189,6 @@ class TransactionDetailViewModel extends ChangeNotifier {
       final data = Map<String, dynamic>.from(
         response['data'] ?? {},
       );
-
-      print(data);
 
       sender = Map<String, dynamic>.from(data['sender'] ?? {});
       receiver = Map<String, dynamic>.from(data['receiver'] ?? {});
@@ -195,7 +232,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
         transactionCreatedAt = apiCreated;
       }
 
-      if (isOffline && existingUtr == null && transactionCreatedAt != null) {
+      if (isPending && transactionCreatedAt != null) {
         startCountdownTimer();
       }
 
@@ -205,7 +242,16 @@ class TransactionDetailViewModel extends ChangeNotifier {
 
       isLoadingDetails = false;
       notifyListeners();
-    } catch (e) {
+    } catch (e, stackTrace) {
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Transaction Details',
+          operation: 'fetch_payment_details',
+          method: 'POST',
+        ),
+      );
       detailsError = e.toString();
       isLoadingDetails = false;
       notifyListeners();
@@ -225,16 +271,157 @@ class TransactionDetailViewModel extends ChangeNotifier {
 
       final tId = txData['transaction_id'];
 
-      await apiService.submitUtr(
+      print(tId);
+
+      final response = await apiService.submitUtr(
         transactionId: int.parse(tId.toString()),
         utrNumber: utr,
       );
 
+
+      final success = response['success'] == true ||
+          response['status'] == 'success';
+
+      if (!success) {
+        final message =
+            response['message']?.toString() ?? 'Failed to submit UTR';
+
+        print(response);
+
+        unawaited(
+          ErrorReportService.instance.reportError(
+
+            error: Exception('Submit UTR API Error: $message'),
+            stackTrace: StackTrace.current,
+            screen: 'Transaction Details',
+            operation: 'submit_utr',
+            method: 'POST',
+          ),
+        );
+      }
+
       existingUtr = utr.toUpperCase();
       countdownTimer?.cancel();
+    } catch (e, stackTrace) {
+      print(e);
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Transaction Details',
+          operation: 'submit_utr',
+          method: 'POST',
+        ),
+      );
+      rethrow;
     } finally {
       utrSubmitting = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> startOnlinePayment({
+    required VoidCallback onPaymentPending,
+    required VoidCallback onPaymentCancelled,
+    required void Function(String message) onPaymentFailed,
+    required void Function(String orderId) onPaymentSuccess,
+    required void Function(String message) onVerificationFailed,
+  }) async {
+    try {
+      isProcessingPayment = true;
+      notifyListeners();
+
+      final double amountValue = totalPayable;
+      if (amountValue <= 0) {
+        throw Exception('Invalid payment amount: $amountValue');
+      }
+
+      final name = sender['name'] ?? 'User';
+      final phone = sender['mobile']?.toString() ?? '';
+
+      String? email = sender['email'];
+      if (email == null || email.isEmpty) {
+        email = await UserStorage.getUserEmail();
+      }
+
+      final transaction = transactionId.toString();
+
+      final response = await ApiService.createCashfreeOrder(
+        amount: amountValue.round(),
+        name: name,
+        phone: phone,
+        email: email ?? '',
+        transaction: transaction,
+      );
+
+      if (response['success'] == false) {
+        throw Exception(response['message'] ?? 'Failed to create payment order');
+      }
+
+      final data = response['data'] ?? response;
+      final sessionId = data['payment_session_id'];
+      final orderId = data['order_id'];
+
+      if (sessionId == null || orderId == null) {
+        throw Exception('Payment Session ID or Order ID missing');
+      }
+
+      cfPaymentGatewayService.setCallback(
+        (returnedOrderId) async {
+          try {
+            isProcessingPayment = true;
+            notifyListeners();
+
+            final verifyResponse = await ApiService.paymentReturn(
+              order_id: returnedOrderId,
+            );
+
+            final statusResponse = verifyResponse?['data']?['order_status']?.toString();
+
+            if (verifyResponse?['success'] == true && statusResponse == 'PAID') {
+              txData['status'] = 'success';
+              onPaymentSuccess(returnedOrderId);
+            } else if (statusResponse == 'PENDING') {
+              onPaymentPending();
+            } else {
+              onPaymentFailed(verifyResponse?['message'] ?? 'Payment verification failed');
+            }
+          } catch (e) {
+            onVerificationFailed('Verification Error: ${e.toString()}');
+          } finally {
+            isProcessingPayment = false;
+            fetchPaymentDetails();
+            notifyListeners();
+          }
+        },
+        (CFErrorResponse errorResponse, String orderIdArg) {
+          isProcessingPayment = false;
+          notifyListeners();
+          onPaymentCancelled();
+        },
+      );
+
+      final session = CFSessionBuilder()
+          .setEnvironment(CFEnvironment.PRODUCTION)
+          .setPaymentSessionId(sessionId)
+          .setOrderId(orderId)
+          .build();
+
+      final payment = CFWebCheckoutPaymentBuilder().setSession(session).build();
+      cfPaymentGatewayService.doPayment(payment);
+
+    } catch (e, stackTrace) {
+      isProcessingPayment = false;
+      notifyListeners();
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Transaction Details',
+          operation: 'start_online_payment',
+        ),
+      );
+      rethrow;
     }
   }
 
@@ -250,6 +437,16 @@ class TransactionDetailViewModel extends ChangeNotifier {
       await apiService.downloadInstructions(
         transactionId: transactionId,
       );
+    } catch (e, stackTrace) {
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Transaction Details',
+          operation: 'download_instructions',
+        ),
+      );
+      rethrow;
     } finally {
       isDownloading = false;
       notifyListeners();
@@ -268,6 +465,16 @@ class TransactionDetailViewModel extends ChangeNotifier {
       await apiService.downloadFinalBill(
         receiverId: receiverId,
       );
+    } catch (e, stackTrace) {
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Transaction Details',
+          operation: 'download_final_bill',
+        ),
+      );
+      rethrow;
     } finally {
       isDownloading = false;
       notifyListeners();

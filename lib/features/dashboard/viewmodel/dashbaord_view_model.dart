@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:payfxglobal/models/user/user.dart';
 import 'package:payfxglobal/features/dashboard/service/dashboard_api_service.dart';
+import '../../../services/error_report_service.dart';
 
 class DashboardViewModel extends ChangeNotifier {
   final DashboardService service;
@@ -64,13 +66,38 @@ class DashboardViewModel extends ChangeNotifier {
             final data = dashboardData['data'];
             activeTransactionsCount = int.tryParse(data['active_transactions_count']?.toString() ?? '0') ?? 0;
             recentTransactions = data['recent_transactions'] as List<dynamic>? ?? [];
+          } else if (dashboardData['success'] == false) {
+             unawaited(
+              ErrorReportService.instance.reportError(
+                error: Exception('Dashboard Data API Error: ${dashboardData['message']}'),
+                stackTrace: StackTrace.current,
+                screen: 'Dashboard',
+                operation: 'get_dashboard_data',
+              ),
+            );
           }
-        } catch (e) {
+        } catch (e, stackTrace) {
           debugPrint('KYC/Dashboard check error: $e');
+          unawaited(
+            ErrorReportService.instance.reportError(
+              error: e,
+              stackTrace: stackTrace,
+              screen: 'Dashboard',
+              operation: 'kyc_dashboard_check',
+            ),
+          );
         }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('Dashboard init error: $e');
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Dashboard',
+          operation: 'initialize',
+        ),
+      );
     } finally {
       isLoading = false;
       isKycLoading = false;

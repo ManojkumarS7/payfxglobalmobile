@@ -5,41 +5,56 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:payfxglobal/main.dart';
+import 'package:payfxglobal/features/auth/view/login_screen.dart';
 
 void main() {
-  testWidgets('PayFX Global app starts with login screen', (
-    WidgetTester tester,
-  ) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const PayFXGlobal());
+  group('PayFX Global Login Screen Tests', () {
 
-    // Verify that our app starts with the login screen.
-    expect(find.text('PayFX Global'), findsOneWidget);
-    expect(find.text('Welcome Back'), findsOneWidget);
-    expect(find.text('Sign In'), findsOneWidget);
+    testWidgets('Login screen displays correctly',
+            (WidgetTester tester) async {
 
-    // Verify that login form fields are present.
-    expect(
-      find.byType(TextFormField),
-      findsAtLeastNWidgets(2),
-    ); // Email and password fields
-  });
+          await tester.pumpWidget(
+            const MaterialApp(
+              home: LoginScreen(),
+            ),
+          );
 
-  testWidgets('Login form validation works', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const PayFXGlobal());
+          await tester.pumpAndSettle();
 
-    // Find the Sign In button and tap it without entering credentials
-    final signInButton = find.widgetWithText(ElevatedButton, 'Sign In');
-    await tester.tap(signInButton);
-    await tester.pump();
+          expect(find.text('Welcome Back'), findsOneWidget);
+          expect(find.text('Send Money Anywhere, Anytime'), findsOneWidget);
+          expect(find.text('Sign In'), findsOneWidget);
+          expect(find.text('Forgot Password?'), findsOneWidget);
 
-    // Verify that validation errors appear
-    expect(find.text('Email is required'), findsOneWidget);
-    expect(find.text('Password is required'), findsOneWidget);
+        });
+
+    testWidgets('Empty email and password show validation errors',
+            (WidgetTester tester) async {
+
+          await tester.pumpWidget(
+            const MaterialApp(
+              home: LoginScreen(),
+            ),
+          );
+
+          await tester.pumpAndSettle();
+
+          final signInButton = find.text('Sign In');
+
+          await tester.ensureVisible(signInButton);
+          await tester.tap(signInButton);
+
+          await tester.pumpAndSettle();
+
+          expect(
+            find.text('This field is required'),
+            findsNWidgets(2),
+          );
+
+        });
+
   });
 }

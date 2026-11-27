@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../service/transaction_history_service.dart';
 import '../transaction_item/transaction_item.dart';
+import '../../../services/error_report_service.dart';
 
 class TransactionHistoryViewModel extends ChangeNotifier {
   final TransactionHistoryApiService apiService;
@@ -23,24 +25,49 @@ class TransactionHistoryViewModel extends ChangeNotifier {
     'All',
     'Success',
     'Pending',
-    'Settled',
+    'Failed',
   ];
 
+  /// The list of transactions after applying the 48-hour expiration rule
+  List<TransactionItem> get _baseFilteredTransactions {
+    final now = DateTime.now();
+    return transactions.where((tx) {
+      final isFinal = tx.status == 'success' || 
+                     tx.status == 'settled' || 
+                     tx.status == 'failed';
+      
+      if (isFinal) return true;
+
+      final difference = now.difference(tx.createdAt);
+      // Hide if more than 48 hours and not completed (success/settled/failed)
+      if (difference.inHours >= 48) {
+        return false;
+      }
+      return true;
+    }).toList();
+  }
+
   List<TransactionItem> get filteredTransactions {
-    var filtered = transactions;
+    var filtered = _baseFilteredTransactions;
 
     if (selectedFilter != 'All') {
-      if (selectedFilter == 'Settled') {
+      if (selectedFilter == 'Failed') {
         filtered = filtered
             .where(
               (e) => e.status == 'settled' || e.status == 'failed',
-        )
+            )
+            .toList();
+      } else if (selectedFilter == 'Pending') {
+        filtered = filtered
+            .where(
+              (e) => e.status == 'pending' || e.status.contains('pending'),
+            )
             .toList();
       } else {
         filtered = filtered
             .where(
               (e) => e.status == selectedFilter.toLowerCase(),
-        )
+            )
             .toList();
       }
     }
@@ -49,9 +76,9 @@ class TransactionHistoryViewModel extends ChangeNotifier {
       filtered = filtered
           .where(
             (e) => e.recipientName
-            .toLowerCase()
-            .contains(searchQuery.toLowerCase()),
-      )
+                .toLowerCase()
+                .contains(searchQuery.toLowerCase()),
+          )
           .toList();
     }
 
@@ -59,15 +86,15 @@ class TransactionHistoryViewModel extends ChangeNotifier {
   }
 
   int get successCount {
-    return transactions.where((e) => e.status == 'success').length;
+    return _baseFilteredTransactions.where((e) => e.status == 'success').length;
   }
 
   int get pendingCount {
-    return transactions.where((e) => e.status == 'pending').length;
+    return _baseFilteredTransactions.where((e) => e.status == 'pending' || e.status.contains('pending')).length;
   }
 
-  int get settledCount {
-    return transactions
+  int get failedCount {
+    return _baseFilteredTransactions
         .where((e) => e.status == 'settled' || e.status == 'failed')
         .length;
   }
@@ -83,9 +110,18 @@ class TransactionHistoryViewModel extends ChangeNotifier {
       transactions = await apiService.fetchTransactions(
         userId: userId,
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
       errorMessage = 'Something went wrong';
       transactions = [];
+
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Transaction History',
+          operation: 'fetch_transactions',
+        ),
+      );
     } finally {
       isLoading = false;
       notifyListeners();
@@ -102,9 +138,16 @@ class TransactionHistoryViewModel extends ChangeNotifier {
       transactions = await apiService.fetchTransactions(
         userId: userId,
       );
-
-    } catch (e) {
+    } catch (e, stackTrace) {
       errorMessage = 'Something went wrong';
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Transaction History',
+          operation: 'refresh_transactions',
+        ),
+      );
     } finally {
       isRefreshing = false;
       notifyListeners();

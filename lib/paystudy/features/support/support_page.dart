@@ -122,6 +122,9 @@ class _SupportPageState extends State<SupportPage> {
                           const Text('Business Hours', style: TextStyle(fontFamily: _font, fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white)),
                           const SizedBox(height: 2),
                           Text('Mon - Fri: 9:30 AM to 6:30 PM (IST)', style: TextStyle(fontFamily: _font, fontSize: 12, color: Colors.white.withOpacity(0.8), fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 2),
+                          Text('Saturday: 9:30 AM to 1:30 PM (IST)', style: TextStyle(fontFamily: _font, fontSize: 12, color: Colors.white.withOpacity(0.8), fontWeight: FontWeight.w600)),
+
                         ],
                       ),
                     ),

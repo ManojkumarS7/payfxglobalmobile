@@ -8,4 +8,14 @@ class PaymentSummaryApiService {
       transactionId: transactionId,
     );
   }
+
+  Future<Map<String, dynamic>> updateReviewSubmit({
+    required dynamic transactionId,
+    required String bankChargeType,
+  }) async {
+    return await ApiService.updateReviewSubmit(
+      transactionId: transactionId,
+      bankChargeType: bankChargeType,
+    );
+  }
 }

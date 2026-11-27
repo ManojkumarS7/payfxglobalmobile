@@ -1,17 +1,18 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:payfxglobal/utils/app_theme.dart';
 import 'package:payfxglobal/widgets/app_snackbar.dart';
 import 'package:payfxglobal/widgets/custom_loading_indicator.dart';
 import '../viewmodel/delete_account_viewmode.dart';
 
-class DeleteAccountScreen extends StatefulWidget {
+class DeleteAccountScreen extends ConsumerStatefulWidget {
   const DeleteAccountScreen({super.key});
 
   @override
-  State<DeleteAccountScreen> createState() => _DeleteAccountScreenState();
+  ConsumerState<DeleteAccountScreen> createState() => _DeleteAccountScreenState();
 }
 
-class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
+class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
   late final DeleteAccountViewModel viewModel;
   final TextEditingController _otherReasonController = TextEditingController();
 

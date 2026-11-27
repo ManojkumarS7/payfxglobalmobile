@@ -10,7 +10,7 @@ class AppSnackbar {
           msg,
           style: const TextStyle(
             fontFamily: 'Satoshi',
-            color: AppColors.TextColor,
+            color: Colors.white,
           ),
         ),duration:  Duration(seconds: 1),
 

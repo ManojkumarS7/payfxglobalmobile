@@ -1,4 +1,8 @@
+import 'dart:ui';
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:payfxglobal/widgets/app_snackbar.dart';
 import 'package:payfxglobal/widgets/custom_loading_indicator.dart';
 import 'package:payfxglobal/widgets/custom_text_field.dart';
@@ -6,7 +10,7 @@ import '../../../utils/app_theme.dart';
 import '../service/forgot_password_api_service.dart';
 import '../viewmodel/forgot_password_reset_view_model.dart';
 
-class ForgotPasswordResetScreen extends StatefulWidget {
+class ForgotPasswordResetScreen extends ConsumerStatefulWidget {
   final String? email;
 
   const ForgotPasswordResetScreen({
@@ -15,12 +19,12 @@ class ForgotPasswordResetScreen extends StatefulWidget {
   });
 
   @override
-  State<ForgotPasswordResetScreen> createState() =>
+  ConsumerState<ForgotPasswordResetScreen> createState() =>
       _ForgotPasswordResetScreenState();
 }
 
 class _ForgotPasswordResetScreenState
-    extends State<ForgotPasswordResetScreen> {
+    extends ConsumerState<ForgotPasswordResetScreen> {
   late ForgotPasswordResetViewModel vm;
   String? email;
 

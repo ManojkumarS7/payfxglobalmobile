@@ -42,11 +42,11 @@ class TransactionDetailApiService {
     }
   }
 
-  Future<void> submitUtr({
+  Future<Map<String, dynamic>> submitUtr({
     required int transactionId,
     required String utrNumber,
   }) async {
-    await ApiService.submitUtr(
+    return await ApiService.submitUtr(
       transactionId: transactionId,
       utrNumber: utrNumber,
     );

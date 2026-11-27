@@ -1,11 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_cashfree_pg_sdk/api/cferrorresponse/cferrorresponse.dart';
-import 'package:flutter_cashfree_pg_sdk/api/cfpayment/cfdropcheckoutpayment.dart';
 import 'package:flutter_cashfree_pg_sdk/api/cfpayment/cfwebcheckoutpayment.dart';
 import 'package:flutter_cashfree_pg_sdk/api/cfpaymentgateway/cfpaymentgatewayservice.dart';
 import 'package:flutter_cashfree_pg_sdk/api/cfsession/cfsession.dart';
 import 'package:flutter_cashfree_pg_sdk/utils/cfenums.dart';
 import 'package:flutter_cashfree_pg_sdk/utils/cfexceptions.dart';
+import 'package:payfxglobal/services/api_service.dart';
+import 'package:payfxglobal/utils/user_storage.dart';
+import '../../../services/error_report_service.dart';
 import '../service/choose_payment_method_service.dart';
 
 class ChoosePaymentMethodViewModel extends ChangeNotifier {
@@ -23,7 +27,7 @@ class ChoosePaymentMethodViewModel extends ChangeNotifier {
   bool termsAccepted = false;
 
   final CFPaymentGatewayService cfPaymentGatewayService =
-  CFPaymentGatewayService();
+      CFPaymentGatewayService();
 
   bool get canProceed {
     return selectedMethod != null && !isLoading && termsAccepted;
@@ -43,22 +47,24 @@ class ChoosePaymentMethodViewModel extends ChangeNotifier {
     if (responseData == null) return false;
 
     final reason = (responseData?['reason'] ??
-        responseData?['reason_name'] ??
-        responseData?['purpose'] ?? 
-        responseData?['payment_type'] ?? '').toString().toLowerCase();
-        
-    final reasonId = responseData?['reason_id']?.toString() ?? 
-                     responseData?['purpose_id']?.toString() ??
-                     responseData?['purpose']?.toString();
-                     
+            responseData?['reason_name'] ??
+            responseData?['purpose'] ??
+            responseData?['payment_type'] ??
+            '')
+        .toString()
+        .toLowerCase();
+
+    final reasonId = responseData?['reason_id']?.toString() ??
+        responseData?['purpose_id']?.toString() ??
+        responseData?['purpose']?.toString();
+
     // The user specified that reason 'Gift' or reason id '2' should only show offline.
     bool isGift = reason.contains('gift') || reason == '2' || reasonId == '2';
-    
-    debugPrint('isGiftReason check: reason=$reason, reasonId=$reasonId, result=$isGift');
+
+    debugPrint(
+        'isGiftReason check: reason=$reason, reasonId=$reasonId, result=$isGift');
     return isGift;
   }
-
-
 
   int? toInt(dynamic value) {
     if (value == null) return null;
@@ -79,9 +85,7 @@ class ChoosePaymentMethodViewModel extends ChangeNotifier {
     final int? transactionId = toInt(args['transaction_id']);
     final int? recipientId = toInt(args['selected_recipient']);
 
-    if (userId != null &&
-        transactionId != null &&
-        recipientId != null) {
+    if (userId != null && transactionId != null && recipientId != null) {
       apiCalled = true;
       await autoSelectRecipient(
         userId: userId,
@@ -114,6 +118,22 @@ class ChoosePaymentMethodViewModel extends ChangeNotifier {
 
       debugPrint('Select Recipient Response: $response');
 
+      final success =
+          response['success'] == true || response['status'] == 'success';
+      if (!success) {
+        final message =
+            response['message']?.toString() ?? 'Failed to select recipient';
+        unawaited(
+          ErrorReportService.instance.reportError(
+            error: Exception('Select Recipient API Error: $message'),
+            stackTrace: StackTrace.current,
+            screen: 'Choose Payment Method',
+            operation: 'auto_select_recipient',
+            method: 'POST',
+          ),
+        );
+      }
+
       // Handle the case where response['data'] is a list (as seen in debug logs)
       dynamic data = response['data'];
       if (data is List && data.isNotEmpty) {
@@ -125,14 +145,23 @@ class ChoosePaymentMethodViewModel extends ChangeNotifier {
           ...?responseData,
           ...Map<String, dynamic>.from(data),
         };
-        
+
         // After updating responseData, check again if it's a gift reason
         if (isGiftReason) {
           selectedMethod = 'offline';
         }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('Error in autoSelectRecipient: $e');
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Choose Payment Method',
+          operation: 'auto_select_recipient',
+          method: 'POST',
+        ),
+      );
       rethrow;
     } finally {
       isLoading = false;
@@ -146,14 +175,39 @@ class ChoosePaymentMethodViewModel extends ChangeNotifier {
       notifyListeners();
 
       final result = await apiService.paymentMode(
-        transactionId: responseData!['transaction_id'].toString() ,
+        transactionId: responseData!['transaction_id'].toString(),
         paymentMode: 'offline',
       );
 
       print(result);
 
-      return result['success'] == true;
-    } catch (e) {
+      final success =
+          result['success'] == true || result['status'] == 'success';
+      if (!success) {
+        final message =
+            result['message']?.toString() ?? 'Failed to save offline payment mode';
+        unawaited(
+          ErrorReportService.instance.reportError(
+            error: Exception('Save Offline Payment Mode API Error: $message'),
+            stackTrace: StackTrace.current,
+            screen: 'Choose Payment Method',
+            operation: 'save_offline_payment_mode',
+            method: 'POST',
+          ),
+        );
+      }
+
+      return success;
+    } catch (e, stackTrace) {
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Choose Payment Method',
+          operation: 'save_offline_payment_mode',
+          method: 'POST',
+        ),
+      );
       rethrow;
     } finally {
       isLoading = false;
@@ -162,13 +216,39 @@ class ChoosePaymentMethodViewModel extends ChangeNotifier {
   }
 
   Future<void> saveOnlinePaymentMode() async {
-    final result = await apiService.paymentMode(
-      transactionId: responseData!['transaction_id'].toString(),
-      paymentMode: 'online',
-    );
-    
-    if (result['success'] == false) {
-      throw Exception(result['message'] ?? 'Failed to update payment mode to online');
+    try {
+      final result = await apiService.paymentMode(
+        transactionId: responseData!['transaction_id'].toString(),
+        paymentMode: 'online',
+      );
+
+      final success =
+          result['success'] == true || result['status'] == 'success';
+      if (!success) {
+        final message =
+            result['message'] ?? 'Failed to update payment mode to online';
+        unawaited(
+          ErrorReportService.instance.reportError(
+            error: Exception('Save Online Payment Mode API Error: $message'),
+            stackTrace: StackTrace.current,
+            screen: 'Choose Payment Method',
+            operation: 'save_online_payment_mode',
+            method: 'POST',
+          ),
+        );
+        throw Exception(message);
+      }
+    } catch (e, stackTrace) {
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Choose Payment Method',
+          operation: 'save_online_payment_mode',
+          method: 'POST',
+        ),
+      );
+      rethrow;
     }
   }
 
@@ -183,7 +263,8 @@ class ChoosePaymentMethodViewModel extends ChangeNotifier {
       isLoading = true;
       notifyListeners();
 
-      final rawAmount = responseData?['send_amount'] ?? responseData?['total_payable'];
+      final rawAmount =
+          responseData?['send_amount'] ?? responseData?['total_payable'];
 
       final double amount = rawAmount is num
           ? rawAmount.toDouble()
@@ -193,14 +274,22 @@ class ChoosePaymentMethodViewModel extends ChangeNotifier {
         throw Exception('Invalid payment amount: $amount');
       }
 
-      final name = responseData?['name'] ;
+      final name = responseData?['name'];
       final phone = responseData?['mobile']?.toString() ??
           responseData?['phone']?.toString() ??
           '';
-      final email = responseData?['email'] ;
-      final transaction = responseData?['transaction_id']?.toString() ?? '123';
-      final apikey = responseData?['api_key'] ;
 
+      // Try to get email from responseData, fallback to UserStorage
+      String? email = responseData?['email'];
+      if (email == null || email.isEmpty) {
+        email = await UserStorage.getUserEmail();
+        print(email);
+      }
+
+      final transaction = responseData?['transaction_id']?.toString() ?? '123';
+
+      // Get API key correctly
+      final apikey = await ApiService.getApiKey();
 
       debugPrint('===== CASHFREE REQUEST =====');
       debugPrint('Amount      : ${amount.round()}');
@@ -208,22 +297,31 @@ class ChoosePaymentMethodViewModel extends ChangeNotifier {
       debugPrint('Phone       : $phone');
       debugPrint('Email       : $email');
       debugPrint('Transaction : $transaction');
-      debugPrint('API Key     : $apikey');
       debugPrint('============================');
-
 
       final response = await apiService.createCashfreeOrder(
         amount: amount.round(),
-        name: name,
+        name: name ?? 'User',
         phone: phone,
-        email: email,
+        email: email ?? '',
         transaction: transaction,
       );
 
       debugPrint('Cashfree Order Response: $response');
 
       if (response['success'] == false) {
-        throw Exception(response['message'] ?? 'Failed to create payment order');
+        final message =
+            response['message'] ?? 'Failed to create payment order';
+        unawaited(
+          ErrorReportService.instance.reportError(
+            error: Exception('Create Cashfree Order API Error: $message'),
+            stackTrace: StackTrace.current,
+            screen: 'Choose Payment Method',
+            operation: 'create_cashfree_order',
+            method: 'POST',
+          ),
+        );
+        throw Exception(message);
       }
 
       final data = response['data'] ?? response;
@@ -231,12 +329,13 @@ class ChoosePaymentMethodViewModel extends ChangeNotifier {
       final orderId = data['order_id'];
 
       if (sessionId == null || orderId == null) {
-        throw Exception('Payment Session ID or Order ID missing from API response');
+        throw Exception(
+            'Payment Session ID or Order ID missing from API response');
       }
 
       cfPaymentGatewayService.setCallback(
         // SUCCESS CALLBACK
-            (orderId) async {
+        (orderId) async {
           try {
             isLoading = true;
             notifyListeners();
@@ -246,19 +345,36 @@ class ChoosePaymentMethodViewModel extends ChangeNotifier {
             );
 
             final status =
-            verifyResponse?['data']?['order_status']?.toString();
+                verifyResponse?['data']?['order_status']?.toString();
 
             if (verifyResponse?['success'] == true && status == 'PAID') {
               onPaymentSuccess(orderId);
             } else if (status == 'PENDING') {
               onPaymentPending();
             } else {
-              onPaymentFailed(
-                verifyResponse?['message'] ??
-                    'Payment verification failed (Status: $status)',
+              final message = verifyResponse?['message'] ??
+                  'Payment verification failed (Status: $status)';
+              unawaited(
+                ErrorReportService.instance.reportError(
+                  error: Exception('Cashfree Payment Verification Error: $message'),
+                  stackTrace: StackTrace.current,
+                  screen: 'Choose Payment Method',
+                  operation: 'verify_cashfree_payment',
+                  method: 'POST',
+                ),
               );
+              onPaymentFailed(message);
             }
-          } catch (e) {
+          } catch (e, stackTrace) {
+            unawaited(
+              ErrorReportService.instance.reportError(
+                error: e,
+                stackTrace: stackTrace,
+                screen: 'Choose Payment Method',
+                operation: 'verify_cashfree_payment',
+                method: 'POST',
+              ),
+            );
             onVerificationFailed(
               'Verification Error: ${e.toString()}',
             );
@@ -269,18 +385,15 @@ class ChoosePaymentMethodViewModel extends ChangeNotifier {
         },
 
         // ERROR / CANCEL CALLBACK
-            (CFErrorResponse errorResponse, String orderId) {
+        (CFErrorResponse errorResponse, String orderId) {
           isLoading = false;
           notifyListeners();
 
-          final String msg =
-              errorResponse.getMessage() ?? 'Payment cancelled';
+          final String msg = errorResponse.getMessage() ?? 'Payment cancelled';
 
-          final String code =
-              errorResponse.getCode() ?? 'N/A';
+          final String code = errorResponse.getCode() ?? 'N/A';
 
-          final String type =
-              errorResponse.getType() ?? 'N/A';
+          final String type = errorResponse.getType() ?? 'N/A';
 
           debugPrint('===== CASHFREE ERROR =====');
           debugPrint('Message: $msg');
@@ -288,6 +401,17 @@ class ChoosePaymentMethodViewModel extends ChangeNotifier {
           debugPrint('Type: $type');
           debugPrint('Order ID: $orderId');
           debugPrint('==========================');
+
+          if (code != 'PAYMENT_CANCELLED') {
+            unawaited(
+              ErrorReportService.instance.reportError(
+                error: Exception('Cashfree SDK Error: $msg (Code: $code, Type: $type)'),
+                stackTrace: StackTrace.current,
+                screen: 'Choose Payment Method',
+                operation: 'cashfree_sdk_callback',
+              ),
+            );
+          }
 
           // User cancelled/back pressed
           onPaymentCancelled();
@@ -300,25 +424,36 @@ class ChoosePaymentMethodViewModel extends ChangeNotifier {
           .setOrderId(orderId)
           .build();
 
-      final payment = CFWebCheckoutPaymentBuilder()
-          .setSession(session)
-          .build();
+      final payment = CFWebCheckoutPaymentBuilder().setSession(session).build();
 
       cfPaymentGatewayService.doPayment(payment);
-
-    }
-    on CFException catch (e) {
+    } on CFException catch (e, stackTrace) {
       isLoading = false;
       notifyListeners();
       debugPrint("CFException Message: ${e.message}");
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Choose Payment Method',
+          operation: 'start_online_payment_cf',
+        ),
+      );
       rethrow;
     } catch (e, stackTrace) {
       isLoading = false;
       notifyListeners();
       debugPrint("Error: $e");
       debugPrint("StackTrace: $stackTrace");
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Choose Payment Method',
+          operation: 'start_online_payment',
+        ),
+      );
       rethrow;
     }
   }
-
 }

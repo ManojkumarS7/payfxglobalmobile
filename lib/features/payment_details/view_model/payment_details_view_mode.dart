@@ -1,8 +1,14 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import '../../../utils/api_constants2.dart';
 import '../../../utils/user_storage.dart';
+import '../../../utils/external_activity_service.dart';
 import '../model/reason_config/reason_cofig.dart';
 import '../service/payment_details_service.dart';
+import '../../../services/error_report_service.dart';
 
 class PaymentDetailsViewModel extends ChangeNotifier {
   final PaymentDetailsService service;
@@ -179,33 +185,6 @@ class PaymentDetailsViewModel extends ChangeNotifier {
     return Colors.orange;
   }
 
-  // ---------------------------------------------------------------------
-  // Country -> required bank field mapping.
-  // Source of truth: country.xlsx, sheet "Account Information".
-  // Swift code is required for EVERY country and is validated separately
-  // (swiftCodeController), so it is intentionally not a key in this map.
-  //
-  //  Row  Country                Required fields (Account Info sheet)
-  //  ---  ---------------------  -----------------------------------------
-  //   2   Canada                 Account Number, Transit number
-  //   3   USA                    Account Number, Routing number
-  //   4   UK                     Account Number, IBAN, Sort Code
-  //   5   Australia              Account Number, BSB code
-  //   6   New Zealand            Account Number
-  //   7   European Countries     IBAN only (no Account Number)
-  //   8   Gulf Countries         Account Number, IBAN
-  //   9   Hongkong               Account Number
-  //  10   Japan                  Account Number
-  //  11   Norway                 Account Number
-  //  12   UAE                    IBAN only (no Account Number)
-  //  13   Sweden                 Account Number
-  //  14   Singapore              Account Number
-  //  15   South Africa           Account Number + optional Corresponding Bank
-  //  16   Thailand               Account Number
-  //  17   China                  Account Number
-  //  18   Saudi Arbia            IBAN only (no Account Number)
-  //  20   All other countries    Account Number + optional Corresponding Bank
-  // ---------------------------------------------------------------------
   final Map<String, Map<String, String>> countryBankFields = {
     // Row 2 - Canada (CAD)
     'canada': {
@@ -273,8 +252,6 @@ class PaymentDetailsViewModel extends ChangeNotifier {
     },
 
     // Row 8 - Gulf Countries (USD): Qatar, Kuwait, Oman, Bahrain
-    // (UAE and Saudi Arbia have their own dedicated rows - see below -
-    // and are excluded from this "Gulf Countries" bucket.)
     'qatar': {
       'iban': 'required',
       'account_number': 'required',
@@ -366,7 +343,6 @@ class PaymentDetailsViewModel extends ChangeNotifier {
     },
   };
 
-  // Row 7 - European Countries (EUR): Swift + IBAN only, no Account Number
   final List<String> europeanCountriesList = [
     'austria', 'belgium', 'bulgaria', 'croatia', 'cyprus', 'czech republic',
     'denmark', 'estonia', 'finland', 'france', 'germany', 'greece', 'hungary',
@@ -375,15 +351,39 @@ class PaymentDetailsViewModel extends ChangeNotifier {
     'spain', 'switzerland', 'monaco', 'san marino'
   ];
 
-  Future<void> init() async {
-    storedUserName = await UserStorage.getUserFullName();
-    storedUserDob = await UserStorage.getUserDob();
-    debugPrint('✅ Initialized PaymentDetailsViewModel with Stored User: $storedUserName, DOB: $storedUserDob');
+  Future<void> ensureUserLoaded() async {
+    if (userId == null) {
+      try {
+        final userData = await UserStorage.getUserData();
+        final customer = userData['customer'] is Map ? userData['customer'] : userData;
+        if (customer is Map && customer['id'] != null) {
+          userId = int.tryParse(customer['id'].toString());
+        }
+      } catch (_) {}
+    }
+  }
 
-    await Future.wait([
-      fetchReasons(),
-      fetchCountries(),
-    ]);
+  Future<void> init() async {
+    try {
+      await ensureUserLoaded();
+      storedUserName = await UserStorage.getUserFullName();
+      storedUserDob = await UserStorage.getUserDob();
+      debugPrint('✅ Initialized PaymentDetailsViewModel with User ID: $userId, Stored User: $storedUserName, DOB: $storedUserDob');
+
+      await Future.wait([
+        fetchReasons(),
+        fetchCountries(),
+      ]);
+    } catch (e, stackTrace) {
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Payment Details',
+          operation: 'init',
+        ),
+      );
+    }
   }
 
   void setRouteArgs(Object? args) {
@@ -418,7 +418,15 @@ class PaymentDetailsViewModel extends ChangeNotifier {
       reasons = result;
       reasonConfigs.clear();
       reasonConfigs.addAll(configs);
-    } catch (_) {
+    } catch (e, stackTrace) {
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Payment Details',
+          operation: 'fetch_reasons',
+        ),
+      );
       reasons = [];
     } finally {
       reasonsLoading = false;
@@ -429,7 +437,15 @@ class PaymentDetailsViewModel extends ChangeNotifier {
   Future<void> fetchCountries() async {
     try {
       countries = await service.getCountries();
-    } catch (_) {
+    } catch (e, stackTrace) {
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Payment Details',
+          operation: 'fetch_countries',
+        ),
+      );
       countries = [];
     } finally {
       countriesLoading = false;
@@ -449,7 +465,15 @@ class PaymentDetailsViewModel extends ChangeNotifier {
 
     try {
       universities = await service.getUniversitiesByCountry(countryId);
-    } catch (_) {
+    } catch (e, stackTrace) {
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Payment Details',
+          operation: 'fetch_universities',
+        ),
+      );
       universities = [];
     } finally {
       universitiesLoading = false;
@@ -521,47 +545,52 @@ class PaymentDetailsViewModel extends ChangeNotifier {
   }
 
   Future<String?> pickFile(String key) async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx'],
-    );
+    try {
+      final result = await ExternalActivityService.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx'],
+      );
 
-    if (result == null) return null;
+      if (result == null) return null;
 
-    final pickedFile = result.files.first;
+      final pickedFile = result.files.first;
 
-    final extension =
-    (pickedFile.extension ?? '').toLowerCase();
+      final extension = (pickedFile.extension ?? '').toLowerCase();
 
-    final sizeInMB = pickedFile.size / (1024 * 1024);
+      final sizeInMB = pickedFile.size / (1024 * 1024);
 
-    if (!['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx']
-        .contains(extension)) {
-      return 'Unsupported file format.';
+      if (!['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx'].contains(extension)) {
+        return 'Unsupported file format.';
+      }
+
+      // Restrict all files to 10MB
+      if (sizeInMB > 10) {
+        return 'File size should not exceed 10 MB';
+      }
+
+      // Only save after validation passes
+      pickedFiles[key] = pickedFile;
+      notifyListeners();
+
+      return null;
+    } catch (e, stackTrace) {
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Payment Details',
+          operation: 'pick_file',
+        ),
+      );
+      return 'Error picking file';
     }
-
-    if (['jpg', 'jpeg', 'png'].contains(extension) &&
-        sizeInMB > 10) {
-      return 'Image size should not exceed 5 MB';
-    }
-
-    if (['pdf', 'doc', 'docx'].contains(extension) &&
-        sizeInMB > 10) {
-      return 'Document size should not exceed 10 MB';
-    }
-
-    // Only save after validation passes
-    pickedFiles[key] = pickedFile;
-    notifyListeners();
-
-    return null;
   }
 
-  /// Resolves which bank fields apply for a given (lower-cased) country name.
-  /// Falls back gracefully:
-  ///   1. Exact match in [countryBankFields]  (named country / group)
-  ///   2. Match in [europeanCountriesList]    (Row 7 - Europe)
-  ///   3. Default                              (Row 20 - all other countries)
+  void removePickedFile(String key) {
+    pickedFiles.remove(key);
+    notifyListeners();
+  }
+
   Map<String, String> resolveCountryBankConfig(String countryNameLower) {
     final normalized = countryNameLower.trim().toLowerCase();
 
@@ -579,7 +608,6 @@ class PaymentDetailsViewModel extends ChangeNotifier {
       return {...baseConfig, ...countryBankFields[normalized]!};
     }
 
-    // Row 7 - European Countries - Swift code + IBAN only
     if (europeanCountriesList.contains(normalized)) {
       return {
         ...baseConfig,
@@ -587,7 +615,6 @@ class PaymentDetailsViewModel extends ChangeNotifier {
       };
     }
 
-    // Row 20 - Default for "all other countries"
     return {
       ...baseConfig,
       'account_number': 'required',
@@ -627,7 +654,6 @@ class PaymentDetailsViewModel extends ChangeNotifier {
     if (addressController.text.trim().isEmpty) return false;
     if (selectedCountryId == null) return false;
 
-    // The account holder question is mandatory
     if (isBeneficiaryAccountHolder == null) return false;
 
     if (cfg.relationshipOptions.isNotEmpty && !cfg.relationshipFixed) {
@@ -654,11 +680,8 @@ class PaymentDetailsViewModel extends ChangeNotifier {
 
     if (beneficiaryBankNameController.text.trim().isEmpty) return false;
 
-    // Swift code is required for every country.
     if (swiftCodeController.text.trim().isEmpty) return false;
 
-    // Country-specific fields, driven entirely by countryBankFields /
-    // europeanCountriesList (sourced from country.xlsx).
     if (isFieldRequired('account_number') && accountNumberController.text.trim().isEmpty) return false;
     if (isFieldRequired('routing') && routingNumberController.text.trim().isEmpty) return false;
     if (isFieldRequired('transit') && transitNumberController.text.trim().isEmpty) return false;
@@ -669,7 +692,6 @@ class PaymentDetailsViewModel extends ChangeNotifier {
     return true;
   }
 
-  // Local self-remittance check instead of API
   bool checkLocalSelfRemittance() {
     if (selectedReasonId == null) return false;
 
@@ -677,32 +699,30 @@ class PaymentDetailsViewModel extends ChangeNotifier {
   }
 
   Future<Map<String, dynamic>> submitForm() async {
-    if (userId == null) {
-      throw Exception('User id missing');
-    }
-
-    if (transactionId == null || transactionId == 0) {
-      throw Exception('Transaction id missing. Please go back and try again.');
-    }
-
-    if (selectedReasonId == null) {
-      throw Exception('Reason missing');
-    }
+    isSubmitting = true;
+    notifyListeners();
 
     final enteredName = nameController.text.trim();
     final enteredDob = dobController.text.trim();
 
-    debugPrint('🚀 Submitting Transaction:');
-    debugPrint('   Beneficiary Name (Entered): $enteredName');
-    debugPrint('   Beneficiary DOB (Entered): $enteredDob');
-    debugPrint('   Sender Name (Saved): $storedUserName');
-    debugPrint('   Sender DOB (Saved): $storedUserDob');
-
-    isSubmitting = true;
-    notifyListeners();
-
     try {
-      return await service.createTransaction(
+      if (userId == null) {
+        await ensureUserLoaded();
+      }
+
+      if (userId == null) {
+        throw Exception('User ID is missing. Please log in again.');
+      }
+
+      if (transactionId == null || transactionId == 0) {
+        throw Exception('Transaction ID is missing. Please go back and try again.');
+      }
+
+      if (selectedReasonId == null) {
+        throw Exception('Payment reason is missing. Please select a reason.');
+      }
+
+      final response = await service.createTransaction(
         customerId: userId!,
         transactionId: transactionId!,
         name: enteredName,
@@ -728,10 +748,83 @@ class PaymentDetailsViewModel extends ChangeNotifier {
         iban: ibanController.text.trim(),
         ukSortCode: sortCodeController.text.trim(),
         files: pickedFiles,
-        accountHolder: 'No', // As per requirement: proceed only if No, send 'No' to API
+        accountHolder: 'No',
         correspondingBankName: correspondingBankNameController.text.trim(),
         correspondingBankSwift: correspondingBankSwiftCodeController.text.trim(),
       );
+
+      final isSuccess = response['success'] == true ||
+          response['status'] == 'success' ||
+          response['status'] == true ||
+          response['success'] == 'true';
+
+      if (!isSuccess) {
+        final message = response['message']?.toString() ??
+            response['error']?.toString() ??
+            'Transaction submission failed';
+
+        await ErrorReportService.instance.reportError(
+          error: Exception('Create Transaction API Error: $message'),
+          stackTrace: StackTrace.current,
+          screen: 'Payment Details',
+          operation: 'submit_form',
+          method: 'POST',
+          requestUri: Uri.parse(ApiConstants.createTransactionUrl),
+          extraData: {
+            'Customer ID': userId,
+            'Transaction ID': transactionId,
+            'Reason ID': selectedReasonId,
+            'Beneficiary Name': enteredName,
+            'Beneficiary DOB': enteredDob,
+            'Relationship': selectedRelationship,
+            'Beneficiary Address': addressController.text.trim(),
+            'Country ID': selectedCountryId,
+            'Country': countryController.text.trim(),
+            'Beneficiary Email': emailController.text.trim(),
+            'Beneficiary Mobile': mobileController.text.trim(),
+            'Education Loan': educationLoan == 'yes' ? 'yes' : 'no',
+            'Bank Name': beneficiaryBankNameController.text.trim(),
+            'Bank Address': beneficiaryBankBranchController.text.trim(),
+            'Account Number': accountNumberController.text.trim(),
+            'Swift Code': swiftCodeController.text.trim(),
+            'Routing Number': routingNumberController.text.trim(),
+            'Transit Number': transitNumberController.text.trim(),
+            'BSB Code': bsbCodeController.text.trim(),
+            'IBAN': ibanController.text.trim(),
+            'UK Sort Code': sortCodeController.text.trim(),
+            'Attached Files': pickedFiles.keys.toList().join(', '),
+            'Backend Response': jsonEncode(response),
+          },
+          compulsory: true,
+        );
+      }
+      return response;
+    } catch (e, stackTrace) {
+      await ErrorReportService.instance.reportError(
+        error: e,
+        stackTrace: stackTrace,
+        screen: 'Payment Details',
+        operation: 'submit_form',
+        method: 'POST',
+        requestUri: Uri.parse(ApiConstants.createTransactionUrl),
+        extraData: {
+          'Customer ID': userId,
+          'Transaction ID': transactionId,
+          'Reason ID': selectedReasonId,
+          'Beneficiary Name': enteredName,
+          'Beneficiary DOB': enteredDob,
+          'Relationship': selectedRelationship,
+          'Beneficiary Address': addressController.text.trim(),
+          'Country ID': selectedCountryId,
+          'Country': countryController.text.trim(),
+          'Bank Name': beneficiaryBankNameController.text.trim(),
+          'Account Number': accountNumberController.text.trim(),
+          'Swift Code': swiftCodeController.text.trim(),
+          'Attached Files': pickedFiles.keys.toList().join(', '),
+        },
+        compulsory: true,
+      );
+      rethrow;
     } finally {
       isSubmitting = false;
       notifyListeners();

@@ -261,7 +261,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _profileActionTile(
           icon: Icons.info_outline_rounded,
           title: 'About PayFX',
-          subtitle: 'Version 1.3.73',
+          subtitle: 'Version 1.42.76',
           tint: const Color(0xFFE6F0FF),
           onTap: () => Navigator.pushNamed(context, '/about-us'),
         ),

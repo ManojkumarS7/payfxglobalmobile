@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
@@ -119,17 +120,16 @@ class NotificationService {
   }
 
   static Future<void> _printFcmToken() async {
+    if (!kDebugMode) return;
+
     final apnsToken = await _firebaseMessaging.getAPNSToken();
-    print("APNS TOKEN:");
-    print(apnsToken);
+    debugPrint("APNS TOKEN: $apnsToken");
 
     final token = await _firebaseMessaging.getToken();
-    print("FCM TOKEN:");
-    print(token);
+    debugPrint("FCM TOKEN: $token");
 
     _firebaseMessaging.onTokenRefresh.listen((newToken) {
-      print("NEW FCM TOKEN:");
-      print(newToken);
+      debugPrint("NEW FCM TOKEN: $newToken");
     });
   }
 }

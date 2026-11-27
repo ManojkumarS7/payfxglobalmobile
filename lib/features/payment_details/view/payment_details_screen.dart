@@ -1,17 +1,20 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:payfxglobal/services/api_service.dart';
+import 'package:payfxglobal/utils/session_manager.dart';
 import 'package:payfxglobal/widgets/app_snackbar.dart';
 import 'package:payfxglobal/widgets/custom_loading_indicator.dart';
 import 'package:payfxglobal/widgets/custom_text_field.dart';
 
 import '../../../utils/app_theme.dart';
+import '../../../services/error_report_service.dart';
 import '../model/reason_config/reason_cofig.dart';
 import '../service/payment_details_service.dart';
 import '../view_model/payment_details_view_mode.dart';
 
-class PaymentDetailsScreen extends StatefulWidget {
+class PaymentDetailsScreen extends ConsumerStatefulWidget {
   final String? previousPage;
 
   const PaymentDetailsScreen({
@@ -20,10 +23,10 @@ class PaymentDetailsScreen extends StatefulWidget {
   });
 
   @override
-  State<PaymentDetailsScreen> createState() => _PaymentDetailsScreenState();
+  ConsumerState<PaymentDetailsScreen> createState() => _PaymentDetailsScreenState();
 }
 
-class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
+class _PaymentDetailsScreenState extends ConsumerState<PaymentDetailsScreen> {
   late PaymentDetailsViewModel vm;
 
   // ---- Palette (Matched with Dashboard) ----
@@ -43,8 +46,6 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
   final GlobalKey _bankNameKey = GlobalKey();
   final GlobalKey _educationLoanKey = GlobalKey();
   final GlobalKey _docsKey = GlobalKey();
-
-  final GlobalKey _countryDropdownKey = GlobalKey();
 
   final _nameFocus = FocusNode();
   final _dobFocus = FocusNode();
@@ -196,6 +197,16 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
       _checkSelfRemittanceLocally();
       FocusScope.of(context).requestFocus(_addressFocus);
     }
+  }
+
+  String _formatFileSize(int bytes) {
+    if (bytes <= 0) return "0 B";
+    const suffixes = ["B", "KB", "MB", "GB"];
+    var i = (bytes.toDouble() > 0) ? (bytes.toDouble() / 1024).floor().toString().length : 0;
+    // Simple logic for small apps
+    if (bytes < 1024) return "$bytes B";
+    if (bytes < 1024 * 1024) return "${(bytes / 1024).toStringAsFixed(2)} KB";
+    return "${(bytes / (1024 * 1024)).toStringAsFixed(2)} MB";
   }
 
   @override
@@ -370,7 +381,7 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
                                       _buildFileUploadTile(
                                         label: 'Sanction Letter (PDF, JPG, PNG • Max 10MB)*',
                                         file: vm.pickedFiles['sanction_letter'],
-                                        onTap: isAllDisabled ? null : () => vm.pickFile('sanction_letter'),
+                                        onTap: isAllDisabled ? null : () => _onPickFile('sanction_letter'),
                                       ),
                                     ],
                                   ],
@@ -408,6 +419,7 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
                                       enabled: !isAllDisabled,
                                       focusNode: _dobFocus,
                                       hintText: 'DD-MM-YYYY',
+                                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                                       suffixIcon: IconButton(icon: const Icon(Icons.calendar_month_rounded, color: _navy), onPressed: isAllDisabled ? null : () => _selectDate(context)),
                                       onFieldSubmitted: (_) {
                                         _checkSelfRemittanceLocally();
@@ -436,31 +448,33 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
                             ),
                           ),
 
-                          const SizedBox(height: 24),
-                          _FadeSlide(index: i++, child: _sectionTitle('Required Documents')),
-                          const SizedBox(height: 12),
-                          _FadeSlide(
-                            index: i++,
-                            child: _buildWhiteCard(
-                              child: Column(
-                                key: _docsKey,
-                                children: cfg.requiredDocuments.map((doc) {
-                                  return _buildFileUploadTile(
-                                    label: '${doc.label}${doc.required ? ' *' : ''}',
-                                    file: vm.pickedFiles[doc.key],
-                                    onTap: isAllDisabled
-                                        ? null
-                                        : () async {
-                                            final error = await vm.pickFile(doc.key);
-                                            if (error != null && context.mounted) {
-                                              AppSnackbar.show(context, error, success: false);
-                                            }
-                                          },
-                                  );
-                                }).toList(),
+                          if (cfg.requiredDocuments.isNotEmpty) ...[
+                            const SizedBox(height: 24),
+                            _FadeSlide(index: i++, child: _sectionTitle('Required Documents')),
+                            const SizedBox(height: 12),
+                            _FadeSlide(
+                              index: i++,
+                              child: _buildDocumentSizeBanner(),
+                            ),
+                            const SizedBox(height: 10),
+                            _FadeSlide(
+                              index: i++,
+                              child: _buildWhiteCard(
+                                child: Column(
+                                  key: _docsKey,
+                                  children: cfg.requiredDocuments.map((doc) {
+                                    return _buildFileUploadTile(
+                                      label: '${doc.label}${doc.required ? ' *' : ''}',
+                                      file: vm.pickedFiles[doc.key],
+                                      onTap: isAllDisabled
+                                          ? null
+                                          : () => _onPickFile(doc.key),
+                                    );
+                                  }).toList(),
+                                ),
                               ),
                             ),
-                          ),
+                          ],
 
                           const SizedBox(height: 24),
                           _FadeSlide(index: i++, child: _sectionTitle('Bank Details')),
@@ -598,6 +612,62 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
     );
   }
 
+
+  Widget _buildDocumentSizeBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEAF2FF),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFFD2E2FF),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.info_outline_rounded,
+            color: AppTheme.PrimaryColor,
+            size: 22,
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Document Upload Guidelines',
+                  style: TextStyle(
+                    fontFamily: 'Satoshi',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF0B1B3A),
+                  ),
+                ),
+                SizedBox(height: 5),
+                Text(
+                  'Maximum file size: 10 MB per document. '
+                      'Supported formats: PDF, JPG and PNG. '
+                      'Please upload a clear and readable document.',
+                  style: TextStyle(
+                    fontFamily: 'Satoshi',
+                    fontSize: 12,
+                    height: 1.5,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF435574),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
   Widget _sectionTitle(String text) => Text(text, style: const TextStyle(fontFamily: _font, fontSize: 17, fontWeight: FontWeight.w800, color: _ink, letterSpacing: 0.2));
 
   Widget _buildWhiteCard({required Widget child}) => Container(
@@ -665,6 +735,13 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
         },
       ),
     );
+  }
+
+  Future<void> _onPickFile(String key) async {
+    final error = await vm.pickFile(key);
+    if (error != null) {
+      if (mounted) AppSnackbar.show(context, error, success: false);
+    }
   }
 
   void _onReasonSelected(int? value) {
@@ -814,7 +891,7 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(label, style: const TextStyle(fontFamily: _font, fontSize: 12, fontWeight: FontWeight.w700, color: _ink)),
-                    if (hasFile) Text(file.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: _font, fontSize: 11, color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
+                    if (hasFile) Text("${file.name} (${_formatFileSize(file.size)})", maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: _font, fontSize: 11, color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
                   ],
                 ),
               ),
@@ -833,10 +910,15 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
     try {
       final response = await vm.submitForm();
       if (!mounted) return;
-      if (response['success'] == true) {
+      final isSuccess = response['success'] == true ||
+          response['status'] == 'success' ||
+          response['status'] == true ||
+          response['success'] == 'true';
+      if (isSuccess) {
         final args = ModalRoute.of(context)?.settings.arguments as Map?;
-        if (args?['from_dashboard'] == true) Navigator.pop(context);
-        else {
+        if (args?['from_dashboard'] == true) {
+          Navigator.pop(context);
+        } else {
           final cfg = vm.currentConfig;
           Navigator.pushReplacementNamed(context, '/payment-summary', arguments: {
             ...?response['data'] as Map?,
@@ -848,9 +930,26 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
             'tcs_amount': response['data']?['tcs_amount'],
           });
         }
-      } else AppSnackbar.show(context, response['message'] ?? 'Something went wrong', success: false);
-    } catch (e) {
-      AppSnackbar.show(context, 'Something went wrong', success: false);
+      } else {
+        final errorMsg = response['message']?.toString() ??
+            response['error']?.toString() ??
+            'Transaction submission failed';
+        AppSnackbar.show(context, errorMsg, success: false);
+      }
+    } catch (e, stackTrace) {
+      await ErrorReportService.instance.reportError(
+        error: e,
+        stackTrace: stackTrace,
+        screen: 'Payment Details Screen',
+        operation: 'submit_form_screen',
+        compulsory: true,
+      );
+      final errorMsg = e is Exception
+          ? e.toString().replaceFirst('Exception: ', '')
+          : 'Something went wrong';
+      if (mounted) {
+        AppSnackbar.show(context, errorMsg, success: false);
+      }
     }
   }
 }
@@ -910,41 +1009,52 @@ class _CountrySearchSheetState extends State<_CountrySearchSheet> {
               ),
             ),
 
+
             const SizedBox(height: 24),
 
+
             // Search field
-            TextField(
-              controller: _searchController,
-              autofocus: true,
-              style: const TextStyle(
-                fontFamily: 'Satoshi',
-                fontWeight: FontWeight.w700,
+            TextSelectionTheme(
+              data: TextSelectionThemeData(
+                selectionColor: AppTheme.PrimaryColor.withValues(alpha: 0.3),
+                // Bubble drag handles color
+                selectionHandleColor: AppTheme.PrimaryColor,
+                // Flashing input cursor line color
+                cursorColor: AppTheme.PrimaryColor,
               ),
-              decoration: InputDecoration(
-                hintText: 'Search Country...',
-                prefixIcon: const Icon(
-                  Icons.search_rounded,
-                  color: Color(0xFF16305C),
+              child: TextField(
+                controller: _searchController,
+                autofocus: true,
+                style: const TextStyle(
+                  fontFamily: 'Satoshi',
+                  fontWeight: FontWeight.w700,
                 ),
-                filled: true,
-                fillColor: const Color(0xFFF5F7FB),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 16,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(
+                decoration: InputDecoration(
+                  hintText: 'Search Country...',
+                  prefixIcon: const Icon(
+                    Icons.search_rounded,
                     color: Color(0xFF16305C),
-                    width: 1.2,
+                  ),
+                  filled: true,
+                  fillColor: const Color(0xFFF5F7FB),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(
+                      color: Color(0xFF16305C),
+                      width: 1.2,
+                    ),
                   ),
                 ),
               ),

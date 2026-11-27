@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -7,14 +8,14 @@ import '../../../services/app_services.dart';
 import '../../../utils/app_theme.dart';
 import '../../../widgets/no_internet_banner.dart';
 
-class CurrencyRateView extends StatefulWidget {
+class CurrencyRateView extends ConsumerStatefulWidget {
   const CurrencyRateView({super.key});
 
   @override
-  State<CurrencyRateView> createState() => _CurrencyRateViewState();
+  ConsumerState<CurrencyRateView> createState() => _CurrencyRateViewState();
 }
 
-class _CurrencyRateViewState extends State<CurrencyRateView> {
+class _CurrencyRateViewState extends ConsumerState<CurrencyRateView> {
   bool _isLoading = true;
   List<Currency> currencies = [];
   Map<String, String> rates = {};

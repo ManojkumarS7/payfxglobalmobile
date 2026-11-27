@@ -277,23 +277,33 @@ class _FeedbackDialogState extends State<FeedbackDialog> {
                 ),
               ),
               const SizedBox(height: 24),
+
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: List.generate(5, (index) {
                   return IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    visualDensity: VisualDensity.compact,
                     onPressed: () {
                       setState(() {
                         _selectedRating = index + 1;
                       });
                     },
                     icon: Icon(
-                      index < _selectedRating ? Icons.star : Icons.star_border,
-                      color: index < _selectedRating ? Colors.amber : Colors.grey,
-                      size: 32,
+                      index < _selectedRating
+                          ? Icons.star
+                          : Icons.star_border,
+                      color: index < _selectedRating
+                          ? Colors.amber
+                          : Colors.grey,
+                      size: 28,
                     ),
                   );
                 }),
               ),
+
               const SizedBox(height: 16),
               TextField(
                 cursorColor: AppTheme.PrimaryColor,

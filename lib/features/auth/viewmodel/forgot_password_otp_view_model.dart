@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../service/forgot_password_api_service.dart';
+import '../../../services/error_report_service.dart';
 
 class ForgotPasswordOtpViewModel extends ChangeNotifier {
   final ForgotPasswordApiService apiService;
@@ -9,10 +11,9 @@ class ForgotPasswordOtpViewModel extends ChangeNotifier {
   });
 
   final List<TextEditingController> otpControllers =
-  List.generate(6, (_) => TextEditingController());
+      List.generate(6, (_) => TextEditingController());
 
-  final List<FocusNode> otpFocusNodes =
-  List.generate(6, (_) => FocusNode());
+  final List<FocusNode> otpFocusNodes = List.generate(6, (_) => FocusNode());
 
   bool isButtonEnabled = false;
   bool isLoading = false;
@@ -50,8 +51,31 @@ class ForgotPasswordOtpViewModel extends ChangeNotifier {
         otp: enteredOtp,
       );
 
+      final success = response['success'] == true || response['status'] == 'success';
+      if (!success) {
+        final message = response['message']?.toString() ?? 'OTP verification failed';
+        unawaited(
+          ErrorReportService.instance.reportError(
+            error: Exception('Forgot Password OTP Verification API Error: $message'),
+            stackTrace: StackTrace.current,
+            screen: 'Forgot Password OTP',
+            operation: 'verify_otp',
+            method: 'POST',
+          ),
+        );
+      }
+
       return response;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Forgot Password OTP',
+          operation: 'verify_otp',
+          method: 'POST',
+        ),
+      );
       errorMessage = 'Server error. Please try again.';
       rethrow;
     } finally {

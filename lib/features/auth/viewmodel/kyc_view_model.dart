@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../service/kyc_api_service.dart';
+import '../../../services/error_report_service.dart';
 
 class KycViewModel extends ChangeNotifier {
   final kycApiService service;
@@ -71,8 +73,16 @@ class KycViewModel extends ChangeNotifier {
       notifyListeners();
 
       sourceOfFunds = await service.getSourceOfFundOptions();
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('MASTER DATA ERROR: $e');
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'KYC',
+          operation: 'load_master_data',
+        ),
+      );
     } finally {
       loading = false;
       notifyListeners();
@@ -171,7 +181,32 @@ class KycViewModel extends ChangeNotifier {
         panBackFile: panBackFile,
       );
 
+      final success = response['success'] == true || response['status'] == 'success';
+      if (!success) {
+        final message = response['message']?.toString() ?? 'KYC submission failed';
+        unawaited(
+          ErrorReportService.instance.reportError(
+            error: Exception('KYC Submission API Error: $message'),
+            stackTrace: StackTrace.current,
+            screen: 'KYC',
+            operation: 'submit_kyc',
+            method: 'POST',
+          ),
+        );
+      }
+
       return response;
+    } catch (e, stackTrace) {
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'KYC',
+          operation: 'submit_kyc',
+          method: 'POST',
+        ),
+      );
+      rethrow;
     } finally {
       submitting = false;
       notifyListeners();

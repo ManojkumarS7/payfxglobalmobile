@@ -70,7 +70,7 @@ class _IntroScreenState extends State<IntroScreen> {
                     children: [
                       Padding(
                         padding: const EdgeInsets.only(left: 10),
-                        child: Image.asset('assets/images/payfx.png', height: 40, fit: BoxFit.contain, 
+                        child: Image.asset('assets/images/payfx.png', height: 70, fit: BoxFit.contain,
                             errorBuilder: (_, __, ___) => const Text('PayFX', style: TextStyle(fontFamily: _font, fontSize: 20, fontWeight: FontWeight.w900, color: _navy))),
                       ),
                       TextButton(

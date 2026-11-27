@@ -13,15 +13,12 @@ class UnlockScreen extends StatefulWidget {
   State<UnlockScreen> createState() => _UnlockScreenState();
 }
 
-class _UnlockScreenState extends State<UnlockScreen> with WidgetsBindingObserver {
+class _UnlockScreenState extends State<UnlockScreen> {
   final LocalAuthentication auth = LocalAuthentication();
   bool isLoading = false;
   bool? _isResuming;
-  bool _wasPaused = false;
   int _failedAttempts = 0;
 
-  // ---- Palette (Matched with Dashboard) ----
-  // static const Color _navy = Color(0xFF16305C);
   static const Color _ink = Color(0xFF0B1B3A);
   static const Color _accent = Color(0xFFFFC72C);
   static const Color _bg = Color(0xFFF5F7FB);
@@ -30,9 +27,11 @@ class _UnlockScreenState extends State<UnlockScreen> with WidgetsBindingObserver
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _authenticate();
+      if (mounted) {
+        _authenticate();
+      }
     });
   }
 
@@ -47,19 +46,7 @@ class _UnlockScreenState extends State<UnlockScreen> with WidgetsBindingObserver
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused) {
-      _wasPaused = true;
-    }
-    if (state == AppLifecycleState.resumed && _wasPaused) {
-      _wasPaused = false;
-      _authenticate();
-    }
   }
 
   Future<void> _authenticate() async {

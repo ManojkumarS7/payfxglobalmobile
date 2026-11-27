@@ -1,5 +1,3 @@
-
-
 import 'package:flutter/material.dart';
 
 class NoInternetScreen extends StatelessWidget {
@@ -16,19 +14,24 @@ class NoInternetScreen extends StatelessWidget {
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-
-                Image.asset(
-                  "assets/images/no_internet.png",
-                  height: 400,
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 280),
+                  child: Image.asset(
+                    "assets/images/no_internet.png",
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) => const Icon(
+                      Icons.wifi_off,
+                      size: 100,
+                      color: Colors.redAccent,
+                    ),
+                  ),
                 ),
-
-                const SizedBox(height: 40),
-
+                const SizedBox(height: 24),
                 const Text(
                   "We're Losing You",
                   textAlign: TextAlign.center,
@@ -38,9 +41,7 @@ class NoInternetScreen extends StatelessWidget {
                     fontFamily: "satoshi",
                   ),
                 ),
-
                 const SizedBox(height: 12),
-
                 const Text(
                   "Connection lost.\nPlease check your internet connection and try again.",
                   textAlign: TextAlign.center,
@@ -51,9 +52,7 @@ class NoInternetScreen extends StatelessWidget {
                     fontFamily: "satoshi",
                   ),
                 ),
-
-                const SizedBox(height: 40),
-
+                const SizedBox(height: 32),
                 SizedBox(
                   width: double.infinity,
                   height: 52,

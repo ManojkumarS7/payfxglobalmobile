@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:payfxglobal/models/user/user.dart';
@@ -89,6 +90,14 @@ class MoneyTransferViewModel extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('Money transfer init error: $e');
+      // unawaited(
+      //   ErrorReportService.instance.reportError(
+      //     error: e,
+      //     stackTrace: StackTrace.current,
+      //     screen: 'Money Transfer',
+      //     operation: 'initialize',
+      //   ),
+      // );
     } finally {
       isPageLoading = false;
       notifyListeners();
@@ -96,43 +105,75 @@ class MoneyTransferViewModel extends ChangeNotifier {
   }
 
   Future<void> _fetchAndSetIbrLimits() async {
-    final ibrData = await service.fetchIbrRate();
-    if (ibrData.isNotEmpty) {
-      ibrTotalInrLimit = double.tryParse(ibrData['total_inr']?.toString() ?? '');
-      ibrUsdAmountLimit = double.tryParse(ibrData['usd_amount']?.toString() ?? '');
+    try {
+      final ibrData = await service.fetchIbrRate();
+      if (ibrData.isNotEmpty) {
+        ibrTotalInrLimit = double.tryParse(ibrData['total_inr']?.toString() ?? '');
+        ibrUsdAmountLimit = double.tryParse(ibrData['usd_amount']?.toString() ?? '');
+      }
+    } catch (e) {
+      // ignored
     }
   }
 
   Future<void> fetchCurrencyData() async {
-    final data = await service.fetchSettings();
+    try {
+      final data = await service.fetchSettings();
 
-    if (data['success'] == true) {
-      final List<dynamic> countriesData = data['countries'] ?? [];
+      if (data['success'] == true) {
+        final List<dynamic> countriesData = data['countries'] ?? [];
 
-      currencies = service.parseCurrencies(countriesData);
+        currencies = service.parseCurrencies(countriesData);
 
-      final serviceRate = data['service_rate']?.toString() ?? '23.0';
-      serviceCharge = double.tryParse(serviceRate) ?? 23.0;
+        final serviceRate = data['service_rate']?.toString() ?? '23.0';
+        serviceCharge = double.tryParse(serviceRate) ?? 23.0;
 
-      if (currencies.isNotEmpty) {
-        selectedCurrency = currencies.firstWhere(
-              (c) => c.code == 'USD',
-          orElse: () => currencies.first,
-        );
+        if (currencies.isNotEmpty) {
+          selectedCurrency = currencies.firstWhere(
+                (c) => c.code == 'USD',
+            orElse: () => currencies.first,
+          );
 
-        await fetchExchangeRate(selectedCurrency!.code);
+          await fetchExchangeRate(selectedCurrency!.code);
+        }
+      } else {
+        // unawaited(
+        //   ErrorReportService.instance.reportError(
+        //     error: Exception('Fetch Currency Data API Error: ${data['message']}'),
+        //     stackTrace: StackTrace.current,
+        //     screen: 'Money Transfer',
+        //     operation: 'fetch_currency_data',
+        //   ),
+        // );
       }
+    } catch (e) {
+      // unawaited(
+      //   ErrorReportService.instance.reportError(
+      //     error: e,
+      //     stackTrace: StackTrace.current,
+      //     screen: 'Money Transfer',
+      //     operation: 'fetch_currency_data',
+      //   ),
+      // );
     }
   }
 
   Future<void> fetchExchangeRate(String currencyCode) async {
-    exchangeRate = await service.fetchExchangeRate(currencyCode);
-
-    if (exchangeRate == 0 || !exchangeRate.isFinite) {
-      exchangeRate = 0.012;
+    try {
+      final newRate = await service.fetchExchangeRate(currencyCode);
+      if (newRate > 0 && newRate.isFinite) {
+        exchangeRate = newRate;
+        amountErrorMessage = null;
+        calculateForward();
+      }
+    } catch (e) {
+      debugPrint('Error fetching exchange rate: $e');
+      if (exchangeRate == 0) {
+        amountErrorMessage = 'Unable to fetch exchange rate for $currencyCode. Please check your connection.';
+        isSendAmountValid = false;
+        notifyListeners();
+      }
     }
-
-    calculateForward();
   }
 
   Future<void> changeCurrency(Currency? currency) async {
@@ -287,6 +328,8 @@ class MoneyTransferViewModel extends ChangeNotifier {
 
     return taxable * 0.18;
   }
+  //
+  // double get nostroCharge => senderAmount > 25000 ? 1500.0 : 0.0;
 
   Future<Map<String, dynamic>> continueTransfer() async {
     if (!_validateLimits()) {
@@ -297,7 +340,7 @@ class MoneyTransferViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      return await service.storeTransaction(
+      final response = await service.storeTransaction(
         user: currentUser,
         sendAmount: senderController.text.replaceAll(',', ''),
         recipientAmount: recipientController.text.replaceAll(',', ''),
@@ -307,7 +350,37 @@ class MoneyTransferViewModel extends ChangeNotifier {
         gstAmount: gstAmount,
         tcsAmount: tcsAmount,
         senderAmount: senderAmount,
+        // nostroCharge: nostroCharge,
       );
+
+      print(response);
+
+      final success = response['success'] == true || response['status'] == 'success';
+      if (!success) {
+        // final message = response['message']?.toString() ?? 'Store transaction failed';
+        // unawaited(
+        //   ErrorReportService.instance.reportError(
+        //     error: Exception('Store Transaction API Error: $message'),
+        //     stackTrace: StackTrace.current,
+        //     screen: 'Money Transfer',
+        //     operation: 'continue_transfer',
+        //     method: 'POST',
+        //   ),
+        // );
+      }
+      return response;
+    } catch (e) {
+      print(e);
+      // unawaited(
+      //   ErrorReportService.instance.reportError(
+      //     error: e,
+      //     stackTrace: StackTrace.current,
+      //     screen: 'Money Transfer',
+      //     operation: 'continue_transfer',
+      //     method: 'POST',
+      //   ),
+      // );
+      rethrow;
     } finally {
       isLoading = false;
       notifyListeners();

@@ -9,17 +9,20 @@ class TransactionApi {
 
   static Future<List<dynamic>> fetchRecipients() async {
     final headers = await ApiService.authHeaders();
-    print(headers);
 
     final response = await http.get(
       Uri.parse('$baseUrl/app/customer/recipient-list'),
       headers: headers,
     );
 
+    print('📦 RECIPIENT LIST URL: ${Uri.parse('$baseUrl/app/customer/recipient-list')}');
+    // print('📦 RECIPIENT LIST RESPONSE: ${response.body}');
+
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      print('data $data');
-      return data['data'] ?? [];
+      final list = data['data'] ?? [];
+      print('📋 RECIPIENT DATA LIST: $list');
+      return list;
     } else if (response.statusCode == 404) {
       return [];
     } else {

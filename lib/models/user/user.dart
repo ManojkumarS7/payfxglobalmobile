@@ -90,7 +90,6 @@ class User {
   /* ================= JSON PARSER ================= */
 
   factory User.fromJson(Map<String, dynamic> json) {
-    print(json);
     return User(
       userId: _toInt(json['user_id']) ?? 0,
       userName: json['user_name']?.toString() ?? '',

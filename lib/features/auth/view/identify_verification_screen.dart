@@ -1,23 +1,29 @@
+import 'dart:ui';
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:payfxglobal/features/auth/presentation/providers/auth_provider.dart';
 import 'package:payfxglobal/features/auth/viewmodel/auth_viewmodel.dart';
 import 'package:payfxglobal/features/auth/service/auth_api_service.dart';
 import 'package:payfxglobal/features/auth/formatter/pan_input_formatter.dart';
 import 'package:payfxglobal/widgets/custom_text_field.dart';
 import 'package:payfxglobal/widgets/custom_loading_indicator.dart';
 import 'package:payfxglobal/widgets/app_snackbar.dart';
+import 'package:payfxglobal/widgets/registration_progress_widget.dart';
 
 import '../../../utils/app_theme.dart';
 
-class IdentityVerificationScreen extends StatefulWidget {
+class IdentityVerificationScreen extends ConsumerStatefulWidget {
   const IdentityVerificationScreen({super.key});
 
   @override
-  State<IdentityVerificationScreen> createState() => _IdentityVerificationScreenState();
+  ConsumerState<IdentityVerificationScreen> createState() => _IdentityVerificationScreenState();
 }
 
-class _IdentityVerificationScreenState extends State<IdentityVerificationScreen> {
+class _IdentityVerificationScreenState extends ConsumerState<IdentityVerificationScreen> {
   late AuthViewModel viewModel;
   int? userId;
   String? email;
@@ -61,33 +67,47 @@ class _IdentityVerificationScreenState extends State<IdentityVerificationScreen>
     return AnimatedBuilder(
       animation: viewModel,
       builder: (context, child) {
-        return Scaffold(
-          backgroundColor: _bg,
-          appBar: AppBar(
+        return PopScope(
+          canPop: false,
+          onPopInvoked: (didPop) async {
+            if (didPop) return;
+            final exit = await SaveProgressBanner.showExitConfirmation(context);
+            if (exit && mounted) Navigator.pushReplacementNamed(context, '/login');
+          },
+          child: Scaffold(
             backgroundColor: _bg,
-            elevation: 0,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: _ink, size: 20),
-              onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
+            appBar: AppBar(
+              backgroundColor: _bg,
+              elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: _ink, size: 20),
+                onPressed: () async {
+                  final exit = await SaveProgressBanner.showExitConfirmation(context);
+                  if (exit && mounted) Navigator.pushReplacementNamed(context, '/login');
+                },
+              ),
+              title: const Text(
+                'Identity Verification',
+                style: TextStyle(fontFamily: _font, fontSize: 22, fontWeight: FontWeight.w800, color: _ink, letterSpacing: -0.5),
+              ),
             ),
-            title: const Text(
-              'Identity Verification',
-              style: TextStyle(fontFamily: _font, fontSize: 22, fontWeight: FontWeight.w800, color: _ink, letterSpacing: -0.5),
-            ),
-          ),
-          body: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _FadeSlide(index: i++, child: _buildInfoCard()),
-                const SizedBox(height: 28),
-                _FadeSlide(index: i++, child: const Text('Enter Details', style: TextStyle(fontFamily: _font, fontSize: 18, fontWeight: FontWeight.w800, color: _ink))),
-                const SizedBox(height: 12),
-                _FadeSlide(
-                  index: i++,
-                  child: Container(
+            body: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const RegistrationProgressHeader(currentStep: 3),
+                  const SizedBox(height: 12),
+                  const SocialProofBadge(),
+                  const SizedBox(height: 16),
+                  _FadeSlide(index: i++, child: _buildInfoCard()),
+                  const SizedBox(height: 28),
+                  _FadeSlide(index: i++, child: const Text('Enter Details', style: TextStyle(fontFamily: _font, fontSize: 18, fontWeight: FontWeight.w800, color: _ink))),
+                  const SizedBox(height: 12),
+                  _FadeSlide(
+                    index: i++,
+                    child: Container(
                     padding: const EdgeInsets.all(22),
                     decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(28), boxShadow: [BoxShadow(color:  AppTheme.PrimaryColor.withOpacity(0.05), blurRadius: 14, offset: const Offset(0, 6))]),
                     child: Column(
@@ -182,9 +202,10 @@ class _IdentityVerificationScreenState extends State<IdentityVerificationScreen>
               ],
             ),
           ),
-        );
-      },
-    );
+        ),
+      );
+    },
+  );
   }
 
   Future<void> _handleVerify() async {
@@ -198,7 +219,8 @@ class _IdentityVerificationScreenState extends State<IdentityVerificationScreen>
       return;
     }
     if (response['status'] == 'VALID') {
-      AppSnackbar.show(context, 'Identity verified successfully', success: true);
+      await StepCompletionOverlay.show(context, 3);
+      if (!mounted) return;
       final address = response['address'] is Map ? Map<String, dynamic>.from(response['address']) : {};
       if (!mounted) return;
       Navigator.pushNamed(

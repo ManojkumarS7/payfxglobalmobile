@@ -44,13 +44,7 @@ class _SplashScreenState extends State<SplashScreen>
       return;
     }
 
-    final isLoggedIn = await ApiService.isAuthenticated();
-    if (!isLoggedIn) {
-      Navigator.pushReplacementNamed(context, '/login');
-      return;
-    }
-
-    // Check session status using the state enum
+    // Check session status using the state enum (internally verifies authentication)
     final sessionState = await SessionManager().checkSessionState();
 
     if (!mounted) return;

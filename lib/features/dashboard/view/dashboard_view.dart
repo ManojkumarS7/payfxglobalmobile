@@ -1,5 +1,9 @@
 
+import 'dart:io';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
+import 'package:upgrader/upgrader.dart';
+import 'package:payfxglobal/services/app_update_service.dart';
 import 'package:payfxglobal/features/auth/view/login_screen.dart' hide LoadingOverlay;
 import 'package:payfxglobal/services/api_service.dart';
 import 'package:payfxglobal/services/app_services.dart';
@@ -13,16 +17,16 @@ import '../viewmodel/dashbaord_view_model.dart';
 import 'package:payfxglobal/features/transaction_history/view/transaction_history_screen.dart';
 import 'package:payfxglobal/features/profile/profile_screen.dart';
 
-class DashboardScreen extends StatefulWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   final Map<String, dynamic> userData;
 
   const DashboardScreen({super.key, required this.userData});
 
   @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   late DashboardViewModel vm;
 
   // ---- Palette -------------------------------------------------------------
@@ -58,6 +62,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void dispose() {
     _scroll.dispose();
     _offset.dispose();
+    vm.dispose();
     super.dispose();
   }
 
@@ -94,31 +99,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
           builder: (context, _) {
             if (vm.isLoading) return const LoadingOverlay();
 
-            return Scaffold(
-              backgroundColor: _bg,
-              body: SafeArea(
-                bottom: false,
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 380),
-                  switchInCurve: Curves.easeOutCubic,
-                  switchOutCurve: Curves.easeInCubic,
-                  transitionBuilder: (child, anim) {
-                    final dx = _goingRight ? 0.12 : -0.12;
-                    return FadeTransition(
-                      opacity: anim,
-                      child: SlideTransition(
-                        position: Tween<Offset>(begin: Offset(dx, 0), end: Offset.zero).animate(anim),
-                        child: child,
-                      ),
-                    );
-                  },
-                  child: KeyedSubtree(
-                    key: ValueKey(_selectedNavIndex),
-                    child: _buildBody(),
+            return UpgradeAlert(
+              upgrader: AppUpdateService.getUpgrader(),
+              dialogStyle: Platform.isIOS ? UpgradeDialogStyle.cupertino : UpgradeDialogStyle.material,
+              child: Scaffold(
+                backgroundColor: _bg,
+                body: SafeArea(
+                  bottom: false,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 380),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    transitionBuilder: (child, anim) {
+                      final dx = _goingRight ? 0.12 : -0.12;
+                      return FadeTransition(
+                        opacity: anim,
+                        child: SlideTransition(
+                          position: Tween<Offset>(begin: Offset(dx, 0), end: Offset.zero).animate(anim),
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: KeyedSubtree(
+                      key: ValueKey(_selectedNavIndex),
+                      child: _buildBody(),
+                    ),
                   ),
                 ),
+                bottomNavigationBar: _buildBottomNavBar(),
               ),
-              bottomNavigationBar: _buildBottomNavBar(),
             );
           },
         );
@@ -402,7 +411,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildQuickActionsRow() {
     return Row(
       children: [
-        _quickActionIcon('Add recipient', Icons.person_add_alt_1_rounded, _handleAddRecipientPressed),
+        _quickActionIcon('Add recipient', Icons.person_add_alt_1_rounded,_handleMoneyTransferPressed),
         _quickActionIcon('History', Icons.history_rounded, () => _setTab(1)),
         _quickActionIcon('Rates', Icons.show_chart_rounded, () => Navigator.pushNamed(context, '/currency-rates')),
         _quickActionIcon('Support', Icons.headset_mic_rounded, () => Navigator.pushNamed(context, '/support')),

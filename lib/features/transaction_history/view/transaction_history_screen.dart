@@ -24,8 +24,7 @@ class TransactionHistoryScreen extends StatefulWidget {
 class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
   late TransactionHistoryViewModel vm;
 
-  // ---- Palette (Matched with Dashboard) ----
-  static const Color _navy =  AppTheme.PrimaryColor;
+  static const Color _navy = AppTheme.PrimaryColor;
   static const Color _ink = Color(0xFF0B1B3A);
   static const Color _accent = Color(0xFFFFC72C);
   static const Color _bg = Color(0xFFF5F7FB);
@@ -33,7 +32,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
 
   static const Color _successColor = Color(0xFF10B981);
   static const Color _pendingColor = Color(0xFFFFC72C);
-  static const Color _settledColor = Colors.redAccent;
+  static const Color _failedColor = Colors.redAccent;
 
   @override
   void initState() {
@@ -56,8 +55,8 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
         return _successColor;
       case 'Pending':
         return _pendingColor;
-      case 'Settled':
-        return _settledColor;
+      case 'Failed':
+        return _failedColor;
       default:
         return _navy;
     }
@@ -166,7 +165,16 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
           BoxShadow(color: _navy.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 4)),
         ],
       ),
-      child: TextField(
+
+      child: TextSelectionTheme(
+        data: TextSelectionThemeData(
+          selectionColor: AppTheme.PrimaryColor.withValues(alpha: 0.3),
+          // Bubble drag handles color
+          selectionHandleColor: AppTheme.PrimaryColor,
+          // Flashing input cursor line color
+          cursorColor: AppTheme.PrimaryColor,
+        ),
+        child: TextField(
         onChanged: vm.updateSearchQuery,
         decoration: InputDecoration(
           border: InputBorder.none,
@@ -176,6 +184,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
           contentPadding: const EdgeInsets.symmetric(vertical: 15),
         ),
         style: const TextStyle(fontFamily: _font, fontSize: 14, color: _ink, fontWeight: FontWeight.w600),
+      ),
       ),
     );
   }
@@ -255,13 +264,13 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
       ),
       child: Row(
         children: [
-          _buildStatItem('Total', vm.transactions.length.toString(), _ink),
+          _buildStatItem('Total', vm.filteredTransactions.length.toString(), _ink),
           _buildStatDivider(),
           _buildStatItem('Success', vm.successCount.toString(), _successColor),
           _buildStatDivider(),
           _buildStatItem('Pending', vm.pendingCount.toString(), _accent),
           _buildStatDivider(),
-          _buildStatItem('Settled', vm.settledCount.toString(), _settledColor),
+          _buildStatItem('Failed', vm.failedCount.toString(), _failedColor),
         ],
       ),
     );
@@ -284,12 +293,29 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
   }
 
   Widget _buildTransactionCard(TransactionItem tx) {
-    final isSuccess = tx.status.toLowerCase() == 'success';
-    final isSettled = tx.status.toLowerCase() == 'settled' || tx.status.toLowerCase() == 'failed';
-    final Color statusColor = isSuccess ? _successColor : isSettled ? _settledColor : _pendingColor;
+    final status = tx.status.toLowerCase();
+    final isSuccess = status == 'success';
+    final isFailed = status == 'settled' || status == 'failed';
+    final Color statusColor = isSuccess ? _successColor : isFailed ? _failedColor : _pendingColor;
+    
+    // Check if we should navigate to choose payment method
+    final bool isMissingPaymentMode = tx.paymentMode.isEmpty && (status.contains('pending') || status == 'pending');
 
     return _Pressable(
-      onTap: () => Navigator.pushNamed(context, '/transaction-detail', arguments: tx.toJson()),
+      onTap: () {
+        if (isMissingPaymentMode) {
+          // Pass the necessary data to ChoosePaymentMethodScreen
+          final args = {
+            ...tx.toJson(),
+            'user_id': widget.userId,
+            // If the API had recipient_id we'd pass it here, 
+            // but the service seems to handle it by transaction_id if missing.
+          };
+          Navigator.pushNamed(context, '/choose-payment-method', arguments: args);
+        } else {
+          Navigator.pushNamed(context, '/transaction-detail', arguments: tx.toJson());
+        }
+      },
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
@@ -359,7 +385,12 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
             const SizedBox(height: 16),
             Row(
               children: [
-                _miniTag(label: 'STATUS', value: isSettled ? 'Settled' : tx.status, color: statusColor),
+                _miniTag(label: 'STATUS', value: isFailed ? 'Failed' : tx.status, color: statusColor),
+                const SizedBox(width: 12),
+                if (isMissingPaymentMode)
+                  _miniTag(label: 'MODE', value: 'ONLINE / OFFLINE', color: _navy)
+                else
+                  _miniTag(label: 'MODE', value: tx.paymentMode.isNotEmpty ? tx.paymentMode : 'N/A', color: _navy),
                 const Spacer(),
                 _miniTag(label: 'REF', value: '#${tx.transactionId}', color: Colors.grey[500]!),
               ],

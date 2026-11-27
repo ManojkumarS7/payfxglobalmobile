@@ -8,7 +8,6 @@ import 'package:payfxglobal/utils/api_constants2.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:device_info_plus/device_info_plus.dart';
 
 class ApiService {
   static const _secureStorage = FlutterSecureStorage();
@@ -207,21 +206,22 @@ class ApiService {
     }
   }
 
-  static Future<List<dynamic>> fetchRecipients() async {
-    final headers = await ApiService.authHeaders();
-    final response = await http.get(
-      Uri.parse('$ApiConstants/app/customer/recipient-list'),
-      headers: headers,
-    );
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      return data['data'] ?? [];
-    } else if (response.statusCode == 404) {
-      return [];
-    } else {
-      throw Exception('Failed to load recipients: ${response.statusCode}');
-    }
-  }
+  // static Future<List<dynamic>> fetchRecipients() async {
+  //   final headers = await ApiService.authHeaders();
+  //   final response = await http.get(
+  //     Uri.parse(ApiConstants.recipientListUrl),
+  //     headers: headers,
+  //   );
+  //   print(Uri.parse(ApiConstants.recipientListUrl));
+  //   if (response.statusCode == 200) {
+  //     final data = jsonDecode(response.body);
+  //     return data['data'] ?? [];
+  //   } else if (response.statusCode == 404) {
+  //     return [];
+  //   } else {
+  //     throw Exception('Failed to load recipients: ${response.statusCode}');
+  //   }
+  // }
 
   static Future<List<Map<String, dynamic>>> getDeliveryMethod() async {
     final headers = await authHeaders();
@@ -328,6 +328,7 @@ class ApiService {
   static Future<Map<String, dynamic>> getOfflinePaymentDetails({required int transactionId}) async {
     final token = await getToken();
     final uri = Uri.parse('${ApiConstants.getOfflinePaymentUrl}/$transactionId');
+    print(uri);
     final response = await http.get(
       uri,
       headers: {
@@ -397,6 +398,7 @@ class ApiService {
     if (response.statusCode == 200) return jsonDecode(response.body)['data'];
     throw Exception('Failed to load states');
   }
+
 
   static Future<Map<String, dynamic>> saveSenderDetails({
     required int userId,
@@ -594,8 +596,28 @@ class ApiService {
     print('Status Code: ${response.statusCode}');
     print('Response Body: ${response.body}');
     print('==================================\n');
-
-    return jsonDecode(response.body);
+    try {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        if (response.statusCode >= 400) {
+          decoded['status_code'] = response.statusCode;
+          if (decoded['success'] == null && decoded['status'] == null) {
+            decoded['success'] = false;
+          }
+        }
+        return decoded;
+      }
+      return {
+        'status_code': response.statusCode,
+        'success': response.statusCode >= 200 && response.statusCode < 300,
+        'data': decoded,
+      };
+    } catch (_) {
+      throw HttpException(
+        'Server returned HTTP ${response.statusCode}: ${response.body.length > 300 ? response.body.substring(0, 300) : response.body}',
+        uri: uri,
+      );
+    }
   }
 
   static Future<List<dynamic>> getCountries() async {
@@ -759,6 +781,24 @@ class ApiService {
     return jsonDecode(response.body);
   }
 
+  static Future<Map<String, dynamic>> updateReviewSubmit({
+    required dynamic transactionId,
+    required String bankChargeType,
+  }) async {
+    final headers = await authHeaders();
+    final body = {
+      'transaction_id': transactionId.toString(),
+      'bank_charge_type': bankChargeType.toUpperCase(),
+    };
+    final response = await http.post(
+      Uri.parse(ApiConstants.benOurUpdate),
+      headers: {...headers, 'Content-Type': 'application/json'},
+      body: jsonEncode(body),
+    );
+    print(response);
+    return jsonDecode(response.body);
+  }
+
   static Future<Map<String, dynamic>> logoutFromServer() async {
     final headers = await authHeaders();
     final response = await http.post(Uri.parse(ApiConstants.logoutUrl), headers: headers);
@@ -766,12 +806,12 @@ class ApiService {
     return jsonDecode(response.body);
   }
 
-  static Future<Map<String, dynamic>> getTransactionSummary({required int transactionId}) async {
-    final headers = await authHeaders();
-    final response = await http.post(Uri.parse(ApiConstants.transactionSummaryUrl), headers: {...headers, 'Content-Type': 'application/json'}, body: jsonEncode({'transaction_id': transactionId}));
-    if (response.statusCode == 200) return jsonDecode(response.body);
-    throw Exception('Failed to load summary');
-  }
+  // static Future<Map<String, dynamic>> getTransactionSummary({required int transactionId}) async {
+  //   final headers = await authHeaders();
+  //   final response = await http.post(Uri.parse(ApiConstants.transactionSummaryUrl), headers: {...headers, 'Content-Type': 'application/json'}, body: jsonEncode({'transaction_id': transactionId}));
+  //   if (response.statusCode == 200) return jsonDecode(response.body);
+  //   throw Exception('Failed to load summary');
+  // }
 
   static Future<Map<String, dynamic>> checkSelfRemittance({required int reasonId, required String name, required int customerId}) async {
     final headers = await authHeaders();

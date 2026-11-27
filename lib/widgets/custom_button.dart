@@ -35,7 +35,7 @@ class AppPrimaryButton extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(borderRadius),
             side: BorderSide(
-              color: AppTheme.PrimaryColor!,
+              color: AppTheme.PrimaryColor,
               width: 2,
             ),
           ),
@@ -146,11 +146,15 @@ class CustomButton extends StatelessWidget {
                     Icon(icon, size: 20),
                     const SizedBox(width: 8),
                   ],
-                  Text(
-                    text,
-                    style: AppTheme.labelLarge.copyWith(
-                      color: textColor ?? Colors.white,
-                      fontWeight: FontWeight.w600,
+                  Flexible(
+                    child: Text(
+                      text,
+                      style: AppTheme.labelLarge.copyWith(
+                        color: textColor ?? Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],

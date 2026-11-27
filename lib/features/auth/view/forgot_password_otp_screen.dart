@@ -1,11 +1,15 @@
+import 'dart:ui';
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:payfxglobal/widgets/app_snackbar.dart';
 import 'package:payfxglobal/widgets/custom_loading_indicator.dart';
 import '../../../utils/app_theme.dart';
 import '../service/forgot_password_api_service.dart';
 import '../viewmodel/forgot_password_otp_view_model.dart';
 
-class ForgotPasswordOtpScreen extends StatefulWidget {
+class ForgotPasswordOtpScreen extends ConsumerStatefulWidget {
   final String? email;
 
   const ForgotPasswordOtpScreen({
@@ -14,11 +18,11 @@ class ForgotPasswordOtpScreen extends StatefulWidget {
   });
 
   @override
-  State<ForgotPasswordOtpScreen> createState() =>
+  ConsumerState<ForgotPasswordOtpScreen> createState() =>
       _ForgotPasswordOtpScreenState();
 }
 
-class _ForgotPasswordOtpScreenState extends State<ForgotPasswordOtpScreen> {
+class _ForgotPasswordOtpScreenState extends ConsumerState<ForgotPasswordOtpScreen> {
   late ForgotPasswordOtpViewModel vm;
   String? email;
 

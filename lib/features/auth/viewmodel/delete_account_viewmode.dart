@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:payfxglobal/main.dart';
 import 'package:payfxglobal/services/api_service.dart';
 import 'package:payfxglobal/utils/user_storage.dart';
+import '../../../services/error_report_service.dart';
 
 class DeleteAccountViewModel extends ChangeNotifier {
   int currentStep = 0;
@@ -55,8 +57,16 @@ class DeleteAccountViewModel extends ChangeNotifier {
           userName = email.split('@').first;
         }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('Error loading user info: $e');
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Delete Account',
+          operation: 'load_user_info',
+        ),
+      );
     }
     
     // Final safety check
@@ -140,10 +150,33 @@ class DeleteAccountViewModel extends ChangeNotifier {
           othersReason: othersReason,
         );
         debugPrint('Account Closure Reason Response: $response');
+
+        final success = response['success'] == true || response['status'] == 'success';
+        if (!success) {
+          final message = response['message']?.toString() ?? 'Failed to submit closure reason';
+          unawaited(
+            ErrorReportService.instance.reportError(
+              error: Exception('Submit Reason API Error: $message'),
+              stackTrace: StackTrace.current,
+              screen: 'Delete Account',
+              operation: 'submit_reason',
+              method: 'POST',
+            ),
+          );
+        }
       }
       nextStep();
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('Error submitting account closure reason: $e');
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Delete Account',
+          operation: 'submit_reason',
+          method: 'POST',
+        ),
+      );
       errorMessage = 'Failed to submit reason. Please try again.';
     } finally {
       isLoading = false;
@@ -176,9 +209,27 @@ class DeleteAccountViewModel extends ChangeNotifier {
         return true;
       } else {
         errorMessage = result['message'] ?? 'Failed to close account';
+        unawaited(
+          ErrorReportService.instance.reportError(
+            error: Exception('Delete Account API Error: ${errorMessage}'),
+            stackTrace: StackTrace.current,
+            screen: 'Delete Account',
+            operation: 'delete_account',
+            method: 'POST',
+          ),
+        );
         return false;
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      unawaited(
+        ErrorReportService.instance.reportError(
+          error: e,
+          stackTrace: stackTrace,
+          screen: 'Delete Account',
+          operation: 'delete_account',
+          method: 'POST',
+        ),
+      );
       errorMessage = 'An error occurred. Please try again.';
       return false;
     } finally {
